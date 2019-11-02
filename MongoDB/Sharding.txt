@@ -1,0 +1,467 @@
+openssl rand -base64 756 > /home/sharding/mongo.keyfile
+chmod 600 /home/sharding/mongo.keyfile
+chown mongod.mongod /home/sharding/mongo.keyfile
+------------------------------------config servers---------------------------------------------------
+step 1: mongodb config
+mkdir -p /home/sharding/config/rs1
+mkdir -p /home/sharding/config/rs2
+mkdir -p /home/sharding/config/rs3
+
+mkdir -p /home/sharding/config/config
+mkdir -p /home/sharding/log/configdb
+cp /home/data/keyfile/mongo.keyfile /home/sharding
+cd /home/sharding 
+
+chown mongod.mongod *.*
+chown -R mongod.mongod config
+chown -R mongod.mongod log
+chown mongod.mongod /home/sharding/log/configdb
+chown mongod.mongod /home/sharding/config/config/
+-----------------------------------------------------------------------------------------------------
+vi /home/sharding/config/config/mongod1.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/configdb/mongod1.log
+
+storage:
+  dbPath: /home/sharding/config/rs1
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 60001
+  bindIp: 0.0.0.0 # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsconfig
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/config/config/mongod2.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/configdb/mongod2.log
+
+storage:
+  dbPath: /home/sharding/config/rs2
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 60002
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsconfig
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/config/config/mongod3.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/configdb/mongod3.log
+
+storage:
+  dbPath: /home/sharding/config/rs3
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 60003
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsconfig
+----------------------------------------------------------------------------------------------------
+/usr/bin/mongod --configsvr -f /home/sharding/config/config/mongod1.conf
+/usr/bin/mongod --configsvr -f /home/sharding/config/config/mongod2.conf
+/usr/bin/mongod --configsvr -f /home/sharding/config/config/mongod3.conf
+----------------------------------------------------------------------------------------------------
+mongo --port 60001
+rs.initiate();
+use admin
+db.createUser({user:"superuser",pwd:"12345678",roles:["root"]})
+db.auth("superuser","12345678");
+rs.add("127.0.0.1:60002");
+rs.add("127.0.0.1:60003");
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+------------------------------------Shard1 servers--------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+mkdir -p /home/sharding/shard1/rs1
+mkdir -p /home/sharding/shard1/rs2
+mkdir -p /home/sharding/shard1/rs3
+mkdir -p /home/sharding/shard1/config
+mkdir -p /home/sharding/log/
+chown -R mongod.mongod /home/sharding/shard1/
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/shard1/config/mongod1.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/shard1mongod1.log
+
+storage:
+  dbPath: /home/sharding/shard1/rs1
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 51001
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsshard1
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/shard1/config/mongod2.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/shard1mongod2.log
+
+storage:
+  dbPath: /home/sharding/shard1/rs2
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 51002
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsshard1
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/shard1/config/mongod3.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/shard1mongod3.log
+
+storage:
+  dbPath: /home/sharding/shard1/rs3
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 51003
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsshard1
+----------------------------------------------------------------------------------------------------
+/usr/bin/mongod --shardsvr -f /home/sharding/shard1/config/mongod1.conf
+/usr/bin/mongod --shardsvr -f /home/sharding/shard1/config/mongod2.conf
+/usr/bin/mongod --shardsvr -f /home/sharding/shard1/config/mongod3.conf
+----------------------------------------------------------------------------------------------------
+mongo --port 51001
+rs.initiate();
+use admin
+db.createUser({user:"superuser",pwd:"12345678",roles:["root"]})
+db.auth("superuser","12345678");
+rs.add("localhost.localdomain:51002");
+rs.add("localhost.localdomain:51003");
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+------------------------------------Shard2 servers--------------------------------------------------
+----------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------
+mkdir -p /home/sharding/shard2/rs1
+mkdir -p /home/sharding/shard2/rs2
+mkdir -p /home/sharding/shard2/rs3
+mkdir -p /home/sharding/shard2/config
+mkdir -p /home/sharding/log/
+
+chown -R mongod.mongod /home/sharding/shard2/
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/shard2/config/mongod1.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/shard2mongod1.log
+
+storage:
+  dbPath: /home/sharding/shard2/rs1
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 52001
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsshard2
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/shard2/config/mongod2.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/shard2mongod2.log
+
+storage:
+  dbPath: /home/sharding/shard2/rs2
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 52002
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsshard2
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/shard2/config/mongod3.conf
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/sharding/log/shard2mongod3.log
+
+storage:
+  dbPath: /home/sharding/shard2/rs3
+  journal:
+    enabled: true
+  engine: wiredTiger
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+
+# network interfaces
+net:
+  port: 52003
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/sharding/mongo.keyfile
+
+replication:
+  replSetName: rsshard2
+----------------------------------------------------------------------------------------------------
+/usr/bin/mongod --shardsvr -f /home/sharding/shard2/config/mongod1.conf
+/usr/bin/mongod --shardsvr -f /home/sharding/shard2/config/mongod2.conf
+/usr/bin/mongod --shardsvr -f /home/sharding/shard2/config/mongod3.conf
+----------------------------------------------------------------------------------------------------
+mongo --port 52001
+rs.initiate();
+use admin
+db.createUser({user:"superuser",pwd:"12345678",roles:["root"]})
+db.auth("superuser","12345678");
+rs.add("localhost.localdomain:52002");
+rs.add("localhost.localdomain:52003");
+----------------------------------------------------------------------------------------------------
+ps -elf | grep mongod (it should be 9 processes are up and running)
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/mongos.config
+
+processManagement:
+   fork: true
+net:
+   port: 28017
+systemLog:
+   destination: file
+   path: /home/sharding/mongos.log
+   logAppend: true
+security:
+   keyFile: /home/data/keyfile/mongo.keyfile
+sharding:
+   configDB: rsconfig/127.0.0.1:60001,127.0.0.1:60002,127.0.0.1:60003
+----------------------------------------------------------------------------------------------------
+/usr/bin/mongos -f /home/sharding/mongos.config
+mongo --port 28017
+use admin
+db.auth("superuser","12345678");
+//Adding Shards
+sh.addShard("rsshard1/localhost.localdomain:51001,localhost.localdomain:51002,localhost.localdomain:51003");
+sh.addShard("rsshard2/localhost.localdomain:52001,localhost.localdomain:52002,localhost.localdomain:52003");
+
+for(i=0;i<5000000;i++){db.shardcoll.insert({a:i})};
+----------------------------------------------------------------------------------------------------
+MongoDB Enterprise mongos> sh.shardCollection("shardingtest.shardcoll",{"a":1});
+{
+        "code" : 20,
+        "ok" : 0,
+        "errmsg" : "sharding not enabled for db shardingtest"
+}
+
+sh.enableSharding("shardingtest");
+
+MongoDB Enterprise mongos> sh.shardCollection("shardingtest.shardcoll",{"a":1});
+{
+        "proposedKey" : {
+                "a" : 1
+        },
+        "curIndexes" : [
+                {
+                        "v" : 2,
+                        "key" : {
+                                "_id" : 1
+                        },
+                        "name" : "_id_",
+                        "ns" : "shardingtest.shardcoll"
+                }
+        ],
+        "ok" : 0,
+        "errmsg" : "please create an index that starts with the shard key before sharding."
+}
+
+MongoDB Enterprise mongos> db.shardcoll.createIndex({a:1});
+{
+        "raw" : {
+                "rsshard2/localhost.localdomain:52001,localhost.localdomain:52002,localhost.localdomain:52003" : {
+                        "createdCollectionAutomatically" : false,
+                        "numIndexesBefore" : 1,
+                        "numIndexesAfter" : 2,
+                        "ok" : 1,
+                        "$gleStats" : {
+                                "lastOpTime" : {
+                                        "ts" : Timestamp(1506356343, 1),
+                                        "t" : NumberLong(1)
+                                },
+                                "electionId" : ObjectId("7fffffff0000000000000001")
+                        }
+                }
+        },
+        "ok" : 1
+}
+MongoDB Enterprise mongos> sh.shardCollection("shardingtest.shardcoll",{"a":1});
+{ "collectionsharded" : "shardingtest.shardcoll", "ok" : 1 }
+
+for(i=1000001;i<9999999;i++){db.shardcoll.insert({a:i})};
+
+MongoDB Enterprise mongos> db.shardcoll.getShardDistribution();
+
+Shard rsshard1 at rsshard1/localhost.localdomain:51001,localhost.localdomain:51002,localhost.localdomain:51003
+ data : 15.67MiB docs : 498214 chunks : 5
+ estimated data per chunk : 3.13MiB
+ estimated docs per chunk : 99642
+
+Shard rsshard2 at rsshard2/localhost.localdomain:52001,localhost.localdomain:52002,localhost.localdomain:52003
+ data : 27.82MiB docs : 884217 chunks : 6
+ estimated data per chunk : 4.63MiB
+ estimated docs per chunk : 147369
+
+Totals
+ data : 43.5MiB docs : 1382431 chunks : 11
+ Shard rsshard1 contains 36.03% data, 36.03% docs in cluster, avg obj size on shard : 33B
+ Shard rsshard2 contains 63.96% data, 63.96% docs in cluster, avg obj size on shard : 33B
+----------------------------------------------------------------------------------------------------
+Hash based Sharding
+----------------------------------------------------------------------------------------------------
+use shardingtest
+db.createCollection("hashtestingexample");
+db.hashtestingexample.ensureIndex({_id:"hashed"})
+sh.shardCollection("shardingtest.hashtestingexample",{"_id":"hashed"})
+for(i=0;i<10;i++){db.hashtestingexample.insert({z:i})};
+
+for(i=11;i<20;i++){db.hashtestingexample.insert({z:i})};
+----------------------------------------------------------------------------------------------------
+-------------------------------------Nilap Experiment-----------------------------------------------
+----------------------------------------------------------------------------------------------------
+use migratecollection
+for(i=0;i<1000000;i++){db.colltomigrate.insert({y:i})};
+sh.enableSharding("migratecollection");
+db.colltomigrate.ensureIndex({y:1});
+----------------------------------------------------------------------------------------------------
+vi /home/sharding/mongos2.config
+
+processManagement:
+   fork: true
+net:
+   port: 28018
+systemLog:
+   destination: file
+   path: "/home/sharding/mongos2.log"
+   logAppend: true
+security:
+   keyFile: /home/data/keyfile/mongo.keyfile
+sharding:
+   configDB: rsconfig/localhost.localdomain:60001,localhost.localdomain:60002,localhost.localdomain:60003
+----------------------------------------------------------------------------------------------------
+/usr/bin/mongos -f /home/sharding/mongos2.config
+mongo --port 28018
+use admin
+db.auth("superuser","12345678");
+sh.shardCollection("migratecollection.colltomigrate",{"y":1});
+for(i=1000001;i<3000000;i++){db.colltomigrate.insert({y:i})};
+for(i=0;i<1000000;i++){db.colltomigrate1.insert({x:i})};
+----------------------------------------------------------------------------------------------------

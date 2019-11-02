@@ -1,0 +1,72 @@
+1. Which of the following describes a scenario with a field with low cardinality but high selectivity in a query?
+
+Option 1 : A query on _id. 
+Option 2 : You are quering for any time not on June 15, and your database covers timestamps from January through June. 
+Option 3 : A query on a timestamp where nearly all documents are associated with the same datetime.
+Option 4 : A query on a Boolean field where nearly all documents are false but you are searching for one that is true  ---> Low Cardinality, High Selectivity
+Option 5 : You are quering on a hashed ObjectId that is not the _id field, but is generated for each document
+
+2. 
+Given following example document
+{
+"_id": ObjectId("1234567890"),
+"user": {
+"login": "irOn",
+"Description":"Made of steel",
+"Date":ISODate("2014-04-30")
+}
+
+Following index creation command 
+db.users.ensureIndex({"user.login":1, "user.date":-1},"myIndex")
+
+When performing the following query
+db.users.find({"user.login":/^ir.*/},{"user":1,"_id": 0}).sort({"user.date":1})
+
+Which of following statements correctly describe how MongoDB will handle the query ?
+
+Option 1: As covered query using "myindex" because we are filtering out "_id" and only returing "user login"
+Option 2: As an indexed querystring using "myIndex" because field "user.login" is indexed                  ----------------> true
+Option 3: As an optimized sort query (scanAndOrder =false) using "myIndex" because we are sorting on indexed field
+
+3. When would you use the explain() method ?
+
+Option 1: When you want to know the schema of a collection
+Option 2: When you want to know which btree(s) is/are being used for a query ------> true
+Option 3: When you want status on the server
+Option 4 : When you want metadata about the collection
+Option 5 : When you want to know why the database is performing the query
+
+
+4. Suppose you have built indexes with the following commands 
+
+db.collection.ensureIndex({"a": 1 })
+db.collection.ensureIndex({"b":  1 })
+db.collection.ensureIndex({"c": 1, "d":1})
+
+Which of the choices below is covered query ?
+
+Option 1 : db.collection.find()
+Option 2 : db.collection.find({"c":25, "d":13}, {"a":1})
+Option 3 : db.collection.find({"c":25, "d":13}, {"_id":0, "c":1})         --------------> Covered Query
+Option 4 : db.collection.find({"a":18, "b":13}, {"_id":0, "a":1, "b":1 }) 
+Option 5 : db.collection.find({"a":18})
+
+db.sample.insert({a:1, b:2, c:3, d:4});
+
+db.sample.ensureIndex({"a": 1 })
+db.sample.ensureIndex({"b":  1 })
+db.sample.ensureIndex({"c": 1, "d":1})
+
+db.sample.find({"c":25, "d":13}, {"_id":0, "c":1}).explain();
+db.sample.find({"a":18, "b":13}, {"_id":0, "a":1, "b":1 })
+
+5. You have following indexes in things collection.
+
+Index 1  a_1
+Index 2  c_1_b_2_a_1
+Index 3  
+
+Option 1 : Db.things.find({c:1}).sort({a:1, b:1})
+Option 2 : Db.things.find({b:1}).sort({c:1, a:1})
+Option 3 : Db.things.find({a:1}).sort({b:1, c:1})
+

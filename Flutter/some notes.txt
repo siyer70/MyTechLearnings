@@ -1,0 +1,15 @@
+Crosss Platform development
+
+Flutter SDK
+
+	Dart is the programming language
+
+	has its 
+
+
+
+Android studio
+Xcode for Mac
+
+Avd configured
+

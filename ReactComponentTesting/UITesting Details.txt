@@ -1,0 +1,83 @@
+CI=true npm test -- --coverage
+CI=true npm test -- -t 'loads crit'
+
+Jest Enzyme Usage article
+https://medium.com/codeclan/testing-react-with-jest-and-enzyme-20505fec4675
+
+
+
+
+Testing components with table, tr, td elements
+https://medium.com/front-end-weekly/tested-react-lets-build-a-data-table-a76aa100d23f
+
+
+Running tests - a page from create react app developer page
+https://create-react-app.dev/docs/running-tests#initializing-test-environment
+
+Querying from html table
+https://medium.com/front-end-weekly/tested-react-lets-build-a-data-table-a76aa100d23f
+
+
+Jest API Doc
+
+https://jestjs.io/docs/en/expect
+
+Conditional rendering issue in jest/enzyme
+https://github.com/airbnb/enzyme/issues/1976
+
+https://github.com/airbnb/enzyme/issues/346
+
+
+process.nexttick
+https://medium.com/@rishabhsrao/mocking-and-testing-fetch-with-jest-c4d670e2e167
+
+
+Mocking fetch
+
+https://www.npmjs.com/package/fetch-reply-with
+
+
+Matchers example
+
+https://hackernoon.com/implementing-basic-component-tests-using-jest-and-enzyme-d1d8788d627a
+
+
+
+
+Alternatives
+Using Mocha, chai and nock
+https://scotch.io/tutorials/nodejs-tests-mocking-http-requests
+
+https://robdodson.me/mocking-requests-with-mocha-chai-and-sinon/
+
+https://blog.logrocket.com/a-quick-and-complete-guide-to-mocha-testing-d0e0ea09f09d/
+
+
+Handling asynchronous calls
+https://github.com/facebook/create-react-app/issues/967
+
+
+https://keycode.info
+
+
+Async / await
+https://davidwalsh.name/async-await
+https://www.valentinog.com/blog/await-react/
+https://www.valentinog.com/blog/throw-async/
+
+
+discussion on fetch being async and how to handle them (different views)
+https://github.com/facebook/create-react-app/issues/967
+
+
+
+Snapshot testing
+https://hackernoon.com/snapshot-testing-react-components-with-jest-744a1e980366
+
+
+
+Coverage
+https://codewithhugo.com/jest-exclude-coverage/
+
+Keycode info
+https://keycode.info

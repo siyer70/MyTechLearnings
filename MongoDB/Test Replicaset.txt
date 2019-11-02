@@ -1,0 +1,181 @@
+http://venublog.com/2014/05/27/how-to-migrate-to-new-sharded-mongodb-cluster-with-zero-downtime/
+https://github.com/adamobr/mongodb/blob/master/replicate_oplog/replicate.py
+
+step 1: Create directory
+mkdir -p /home/data/rs1
+mkdir -p /home/data/rs2
+mkdir -p /home/data/rs3
+
+step 2: Create Config Directory
+mkdir -p /home/data/config
+
+step 3: Create Log Directory
+mkdir -p /home/data/log/mongodb/
+
+step 4: Create process id directory
+mkdir -p /home/data/processids/
+
+step 5: Create keyfile directory
+mkdir -p /home/data/keyfile/
+
+step 6: Making owner mongod for data file and folders
+chown -R mongod.mongod config/
+chown -R mongod.mongod rs1/
+chown -R mongod.mongod rs2/
+chown -R mongod.mongod rs3/
+chown -R mongod.mongod /data/log/mongodb/
+chown -R mongod.mongod /data/processids/
+chown -R mongod.mongod /data/keyfile/
+chown -R mongod.mongod /data/log
+
+chown -R mongod.mongod /home/data
+
+Step 7: make a keyfile
+openssl rand -base64 756 > /home/data/keyfile/mongo.keyfile
+chmod 600 /home/data/keyfile/mongo.keyfile
+chown mongod.mongod /home/data/keyfile/mongo.keyfile
+
+Step 8:Create a Config File
+vi /home/data/config/mongod1.conf
+
+Step 9:Insert config file contents first node
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/data/log/mongodb/mongod1.log
+
+storage:
+  dbPath: /home/data/rs1/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 40000
+  bindIp: 127.0.0.1  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/data/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/data/config/mongod1.conf
+
+Step 10:Insert config file contents second node (vi /home/data/config/mongod2.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/data/log/mongodb/mongod2.log
+
+storage:
+  dbPath: /home/data/rs2/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 40001
+  bindIp: 127.0.0.1  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/data/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/data/config/mongod2.conf
+
+Step 11:Insert config file contents third node (vi /home/data/config/mongod3.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/data/log/mongodb/mongod3.log
+
+storage:
+  dbPath: /home/data/rs3/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:k
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 40002
+  bindIp: 127.0.0.1  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/data/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/data/config/mongod3.conf
+
+step 12: start three mongodb instances
+/usr/bin/mongod -f /home/data/config/mongod1.conf
+/usr/bin/mongod -f /home/data/config/mongod2.conf
+/usr/bin/mongod -f /home/data/config/mongod3.conf
+
+step 13: connect to mongo port 40000
+mongo --port 40000
+
+step 14: Initiate Replicaset
+rs.initiate()
+
+use admin
+db.createUser({user:"admin",pwd:"admin",roles:["root"]})
+
+use admin
+db.auth("admin","admin");
+
+step 15: Add another two members
+rs.add("localhost.localdomain:40001");
+rs.add("localhost.localdomain:40002");
+
+step 16: Replicaset Status
+rs.status()
+
+
+use nilaptest1
+for(i=0;i<=10;i++){db.firstcoll.insert({a:i})};
+for(i=0;i<=10;i++){db.secondcoll.insert({b:i})};
+for(i=0;i<=10;i++){db.thirdcoll.insert({c:i})};
+
+use nilaptest2
+for(i=0;i<=10;i++){db.forthcoll.insert({d:i})};
+for(i=0;i<=10;i++){db.fifthcoll.insert({e:i})};
+for(i=0;i<=10;i++){db.sixthcoll.insert({f:i})};
+
+I am trying to moving nilaptest2 all collections to nilaptest1.
+mongodump --oplog --out dump --host localhost --port 40001 
+
+--oplog option only works for fullbackup.Partialbackups are not working.
+mongodump db nilaptest2 --oplog --out dump --host localhost --port 40001--->not working
+
+I think that instance to instance copy is possible without anydowntime but 
+within same instance in two different databases it will not be possible
+
+

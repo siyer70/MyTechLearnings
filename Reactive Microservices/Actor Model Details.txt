@@ -1,0 +1,76 @@
+Actor Model Design Goals
+========================
+
+- Reduce scope for concurrency programming bugs
+
+- Loosely coupled components
+
+- Separation of concerns between business logic and failure recovery
+
+Key characteristics
+
+- Reactive Model is a programming model that has three components
+
+	- You can process messages (Akka Behaviours)
+	
+	- You can store states
+
+	- Communicate with other actors (a message is sent to another actor)
+
+
+What is an Actor
+
+- A lightweight process which encapsulates and manages localised states
+
+	In simple words, it is a concurrent object, 
+		capable of applying behaviour, 
+		processing messages
+
+- Sends messages asynchronously (doesn't block waiting for responses)
+	- promotes low coupling
+	- messages are immutable, so 
+		- we are not sharing mutable states
+		- avoids race conditions
+		- thus reduces the scope of concurrency programming bugs
+	- when actor processing the messages, it is done at the actor level itself, so
+		- no time sharing with other actors or shared mutable states
+		- it encapsulates its state
+
+- An actor has a "mailbox" (unbounded queue of messages)
+
+	- Multiple producers, single consumers
+
+- Reacts to messages by processing them from the queue one at a time
+
+
+Actor vs Completable Future
+===========================
+
+Actor is about "concurrent objects"
+
+	- 
+		- processing many messages, 
+		- capturing state, 
+		- and reacting with different behaviour 
+			- based on the state they are in and the messages they receive
+
+	- supervision, monitoring functionalities
+
+
+Completable Future is about "Flow of Functions"
+
+	- Define flow - don't keep track of state, switch behaviours
+	- Combining functions
+
+
+Example of Actor Integrations
+=============================
+
+- Lightweight message queue
+
+- WebSocket: Bind client & server actor to manage two way connection
+
+- UDP/TCP - Bind an actor to manage a connection
+
+- Implement service using an actor
+

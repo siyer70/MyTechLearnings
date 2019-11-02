@@ -1,0 +1,32 @@
+Cloud Migration
+============
+
+Cloud Migration Process
+01. Opportunity Evaluation
+02. Discovery and Planning
+03. Design
+04. Migrate & Validate
+05. Modern Operating Model
+
+Cloud Migration Strategies (6 Rs)
+01. Re Hosting - Lift and Shift
+02. Re Platforming - Lift Tinker and Shift
+	you might make a few cloud (or other) optimizations in order to achieve some tangible benefit, but you aren’t otherwise changing the core architecture of the application
+03. Re Purchasing - Moving to SaaS platform
+	repurchasing is most commonly seen as a move to a SaaS platform. Moving a CRM to Salesforce.com, an HR system to Workday, a CMS to Drupal, and so on.
+04. Re Designing / Re Architecting - Cloud Native Platform
+
+
+05. Retire - See no value in Migrating
+06. Retain - Legacy app that needs to be maintained, no value in Migrating
+
+
+Cloud Migration Tools
+
+
+Migration & Transfer
+Database Migration Service
+Server Migration Service
+Snowball
+Application Discovery Service
+DataSync

@@ -1,0 +1,101 @@
+xss
+clickjacking
+Typo-squatting
+ReDoS
+XSS through CSS (Solved using connect security policy, input validation)
+SQL Injection
+PII data in logs
+
+
+
+Tools
+=====
+
+Retire.js
+Detects vulnerabilities
+
+
+Observatory by Mozilla
+
+
+ZA Proxy (Zed Attack Proxy)
+
+OWASP Top Ten
+
+
+https://wpscan.org
+
+
+Burp Suite
+
+Https://portswigger.net/burp
+
+
+Https://snyk.io/
+
+
+
+SAST (Static code analysis
+DAST
+Penetration testing
+
+
+Use Linting and 'use strict'
+
+HttpOnly cookies
+
+Remove unnecessary headers
+
+Whitelisting domains for CORS
+
+Sanitize Input
+
+
+Helmet.js (middleware used with express in node.js)
+
+Content-security-policy (helmet-csp)
+
+X-Permitted-Cross-Domain-Policies (helmet-crossdomain)
+(Not used anymore since flash is hardly used now)
+
+X-DNS-Prefetch-control (protected via helmet)
+
+Expect-CT
+
+Feature-Policy
+
+X-Frame-Options
+
+Strict-Transport-Security
+
+X-Content-Type-Options (nosniff)
+
+
+Referrer-Policy (Referrer-Policy: Same origin or no-referrer)
+
+
+X-XSS-Protection
+
+
+Type of Attacks
+CSRF - Cross Site Request Forgery (one click attack or session riding)
+(CSURF Protection)
+
+
+
+Auditing Application Architecture Security
+
+Threat Modelling Architecture
+
+- Data Flow Diagrams
+- Control flow Diagrams
+
+
+Validate and sanitise input
+Encode and encrypt data in transit
+
+Use proven libraries for session management
+
+Think like a hacker (graphs and trees of possible attack)
+
+Security should be built into design (not a post implementation affair)

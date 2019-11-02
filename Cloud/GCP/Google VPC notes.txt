@@ -1,0 +1,6 @@
+VPC
+
+- VPCs are Global
+- Subnets are regional
+- Subnets can span multiple zones
+

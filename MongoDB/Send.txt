@@ -1,0 +1,531 @@
+Aggregation framework transform and combine documents in a collection.
+It contains any number of pipelines.
+
+filtering --->$match
+projecting--->$project
+grouping----->$group
+sorting------>$sort
+limiting----->$limit
+skipping----->$skip
+
+db.aggExample.insert({name:"Nilap Shah", subject:"MongoDB", marks:90, height:5.7, weight:70})
+db.aggExample.insert({name:"Nilap Shah", subject:"SQL Server", marks:90, height:5.7, weight:70})
+db.aggExample.insert({name:"Nilap Shah", subject:"Oracle", marks:90, height:5.7, weight:70})
+
+db.aggExample.insert({name:"Prabhu Sundaram", subject:"MongoDB", marks:100, height:5.8, weight:80})
+db.aggExample.insert({name:"Prabhu Sundaram", subject:"SQL Server", marks:100, height:5.8, weight:80})
+db.aggExample.insert({name:"Prabhu Sundaram", subject:"Oracle", marks:100, height:5.8, weight:80})
+
+db.aggExample.insert({name:"Tilak Dasari", subject:"MongoDB", marks:70, height:5.9, weight:71})
+db.aggExample.insert({name:"Tilak Dasari", subject:"SQL Server", marks:70, height:5.9, weight:71})
+db.aggExample.insert({name:"Tilak Dasari", subject:"Oracle", marks:70, height:5.9, weight:71})
+
+db.aggExample.insert({name:"Gowri", subject:"MongoDB", marks:75, height:6.0, weight:72})
+db.aggExample.insert({name:"Gowri", subject:"SQL Server", marks:75, height:6.0, weight:72})
+db.aggExample.insert({name:"Gowri", subject:"Oracle", marks:75, height:6.0, weight:72})
+
+db.aggExample.insert({name:"Vijaya", subject:"MongoDB", marks:76, height:6.1, weight:73})
+db.aggExample.insert({name:"Vijaya", subject:"SQL Server", marks:76, height:6.1, weight:73})
+db.aggExample.insert({name:"Vijaya", subject:"Oracle", marks:76, height:6.1, weight:73})
+
+db.aggExample.insert({name:"Thiru", subject:"MongoDB", marks:77, height:6.2, weight:73})
+db.aggExample.insert({name:"Thiru", subject:"SQL Server", marks:77, height:6.2, weight:73})
+db.aggExample.insert({name:"Thiru", subject:"Oracle", marks:77, height:6.2, weight:73})
+
+filtering : It should be used first if possible to reduce the number of records in pipeline
+db.aggExample.aggregate([{$match:{subject:"MongoDB"}}]);
+db.aggExample.createIndex({subject:1});
+db.aggExample.aggregate([{$match:{subject:"MongoDB"}}],{ explain: true});
+
+{ readConcern: { level: "majority" } }
+
+db.aggExample.aggregate([{$match:{subject:"MongoDB"}}],{allowDiskUse: true});
+
+
+$AND Operator with filter
+db.aggExample.aggregate([{$match:{$and: [{marks:70},{subject:"MongoDB"}] } }]);
+db.aggExample.aggregate([{$match:{$or: [{marks:70},{subject:"MongoDB"}] } }]);
+
+Projecting : $Project (To view specific fields from the records)
+db.aggExample.aggregate(
+[{$match:{$or:[{subject:"MongoDB"}]}},
+{$project:{"_id":0,"height":0,"weight":0}}]);
+
+grouping : $group 
+
+//only for Prabhu
+db.aggExample.aggregate(
+[
+{$match:{name:"Prabhu Sundaram"}},
+{$project:{"_id":0,"height":0,"weight":0}},
+{$group:{"_id":"$name","Total Marks":{"$sum":"$marks"}}}
+]);
+
+//For all persons
+db.aggExample.aggregate(
+[
+{$project:{"_id":0,"height":0,"weight":0}},
+{$group:{"_id":"$name","Total Marks":{"$sum":"$marks"}}}
+]);
+
+//sorting
+db.aggExample.aggregate([
+{$project:{"_id":0,"height":0,"weight":0}},
+{$group:{"_id":"$name","Total Marks":{"$sum":"$marks"}}},
+{$sort:{"Total Marks":-1}}
+]);
+
+//limiting (Top 3 Scorers)
+db.aggExample.aggregate([
+{$project:{"_id":0,"height":0,"weight":0}},
+{$group:{"_id":"$name","total":{"$sum":"$marks"}}},
+{$sort:{total:-1}},
+{$limit:3}
+]);
+
+//limit + skip
+db.aggExample.aggregate([
+{$project:{"_id":0,"height":0,"weight":0}},
+{$group:{"_id":"$name","total":{"$sum":"$marks"}}},
+{$sort:{total:-1}},
+{$limit:3},
+{$skip:1}
+]);
+
+db.aggExample.aggregate([
+{$project:{"_id":0,"height":0,"weight":0}},
+{$group:{"_id":"$name","total":{"$sum":"$marks"}}},
+{$sort:{total:-1}},
+{$limit:3},
+{$skip:2}
+]);
+
+//more operators
+Unwind Operator
+db.inventory.insert({"_id":1,"item":"ABC1",sizes:["S","M","L"]});
+db.inventory.aggregate([{$unwind:"$sizes"}])
+
+db.inventory.insert({"_id":2,"item":"EFG","sizes":[]})
+db.inventory.insert({"_id":3,"item":"IJK","sizes":"M"})
+db.inventory.insert({"_id":4,"item":"LMN"})
+db.inventory.insert({"_id":5,"item":"XYZ","sizes":null})
+
+db.inventory.aggregate([{$unwind:"$sizes"}])
+db.inventory.aggregate([{$unwind:{path:"$sizes"}}])
+
+db.inventory.aggregate([{$unwind:{path:"$sizes",includeArrayIndex:"arrayIndex"}}])
+
+//To include Null/missing fields
+db.inventory.aggregate([{$unwind:{path:"$sizes",preserveNullAndEmptyArrays:true}}])
+
+//orders collection
+db.orders.insert({"_id":1,"item":"abc","price":12,"quantity":2,"type":"apparel"});
+db.orders.insert({"_id": 2,"item":"jkl","price":20,"quantity":1,"type":"electronics"});
+db.orders.insert({"_id":3,"item":"abc","price":10,"quantity":5,"type":"apparel"});
+
+//Create Indexes
+db.orders.createIndex( { item: 1, quantity: 1 } )
+db.orders.createIndex( { type: 1, item: 1 } )
+
+db.orders.find({"type":"apparel"});
+
+db.orders.aggregate([{$indexStats:{}}])
+db.orders.aggregate([{$indexStats:{}}]).pretty();
+
+//$redact -- forecast collection
+db.forecast.insert(
+{
+  _id: 1,
+  title: "123 Department Report",
+  tags: [ "G", "STLW" ],
+  year: 2014,
+  subsections: [
+    {
+      subtitle: "Section 1: Overview",
+      tags: [ "SI", "G" ],
+      content:  "Section 1: This is the content of section 1."
+    },
+    {
+      subtitle: "Section 2: Analysis",
+      tags: [ "STLW" ],
+      content: "Section 2: This is the content of section 2."
+    },
+    {
+      subtitle: "Section 3: Budgeting",
+      tags: [ "TK" ],
+      content: {
+        text: "Section 3: This is the content of section3.",
+        tags: [ "HCS" ]
+      }
+    }
+  ]
+})
+
+
+var userAccess = ["STLW","G"];
+db.forecast.aggregate(
+   [
+     { $match: { year: 2014 } },
+     { $redact: {
+        $cond: {
+           if: { $gt: [ { $size: { $setIntersection: [ "$tags", userAccess ] } }, 0 ] },
+           then: "$$DESCEND",
+           else: "$$PRUNE"
+         }
+       }
+     }
+   ]
+).pretty();
+
+Exclude All Fields at a Given Level
+
+db.accounts.insert(
+{
+  _id: 1,
+  level: 1,
+  acct_id: "xyz123",
+  cc: {
+    level: 5,
+    type: "yy",
+    num: 000000000000,
+    exp_date: ISODate("2015-11-01T00:00:00.000Z"),
+    billing_addr: {
+      level: 5,
+      addr1: "123 ABC Street",
+      city: "Some City"
+    },
+    shipping_addr: [
+      {
+        level: 3,
+        addr1: "987 XYZ Ave",
+        city: "Some City"
+      },
+      {
+        level: 3,
+        addr1: "PO Box 0123",
+        city: "Some City"
+      }
+    ]
+  },
+  status: "A"
+})
+
+//$lookup
+db.orders.insert({"_id":1,"item":"abc","price":12,"quantity":2})
+db.orders.insert({"_id":2,"item":"jkl","price":20,"quantity":1});
+db.orders.insert({"_id":3})
+
+db.inventory.insert({"_id":1,"sku":"abc",description:"product 1","instock":120})
+db.inventory.insert({"_id":2,"sku":"def",description:"product 2","instock":80})
+db.inventory.insert({"_id":3,"sku":"ijk",description:"product 3","instock":60})
+db.inventory.insert({"_id":4,"sku":"jkl",description:"product 4","instock":70})
+db.inventory.insert({"_id":5,"sku":null,description:"Incomplete"})
+db.inventory.insert({"_id":6});
+
+db.orders.aggregate([
+    {
+      $lookup:
+        {
+          from: "inventory",
+          localField: "item",
+          foreignField: "sku",
+          as: "inventory_docs"
+        }
+   }
+])
+
+
+//$sample
+db.users.insert({"_id":1,"name":"dave123","q1":true,"q2":true});
+db.users.insert({"_id":2,"name":"dave2","q1":false,"q2":false});
+db.users.insert({"_id":3,"name":"ahn","q1":true,"q2":true});
+db.users.insert({"_id":4,"name":"li","q1":true,"q2":false});
+db.users.insert({"_id":5,"name":"annT","q1":false,"q2":true});
+db.users.insert({"_id":6,"name":"li","q1":true,"q2":true});
+db.users.insert({"_id":7,"name":"ty","q1":false,"q2":true});
+
+
+db.users.aggregate(
+   [ { $sample: { size: 3 } } ]
+)
+
+//Aggregation Chapter Reading
+https://docs.mongodb.com/manual/core/aggregation-pipeline-optimization/#pipeline-sequence-optimization
+
+//import zips.json
+wget http://media.mongodb.org/zips.json
+mongoimport --db training --collection zipcodes --file zips.json
+
+{
+  "_id": "10280",
+  "city": "NEW YORK",
+  "state": "NY",
+  "pop": 5574,
+  "loc": [
+    -74.016323,
+    40.710537
+  ]
+}
+
+
+//Statewise population
+db.zipcodes.find({"state": "NY"})
+db.zipcodes.find({"state": "NY"},{"_id":0,pop:1,state:1})
+db.zipcodes.aggregate([
+{$group:{"_id":"$state",population:{$sum:"$pop"}}},
+{$match:{population:{$gte:10*1000*1000}}}
+])
+
+SQL:
+SELECT state, SUM(pop) AS totalPop
+FROM zipcodes
+GROUP BY state
+HAVING totalPop >= (10*1000*1000)
+
+{
+  "_id": "10280",
+  "city": "NEW YORK",
+  "state": "NY",
+  "pop": 5574,
+  "loc": [
+    -74.016323,
+    40.710537
+  ]
+}
+
+
+
+//Return Largest and Smallest Cities by State by population
+
+
+//collection statistics
+db.zipcodes.aggregate( [ { $collStats: { latencyStats: { histograms: true } } } ] )
+db.zipcodes.aggregate( [ { $collStats: { storageStats: { } } } ] )
+
+
+db.sales.insertMany([
+{ "_id" : 1, "item" : "abc", "price" : 10, "quantity" : 2, "date" : ISODate("2014-03-01T08:00:00Z") },
+{ "_id" : 2, "item" : "jkl", "price" : 20, "quantity" : 1, "date" : ISODate("2014-03-01T09:00:00Z") },
+{ "_id" : 3, "item" : "xyz", "price" : 5, "quantity" : 10, "date" : ISODate("2014-03-15T09:00:00Z") },
+{ "_id" : 4, "item" : "xyz", "price" : 5, "quantity" : 20, "date" : ISODate("2014-04-04T11:21:39.736Z") },
+{ "_id" : 5, "item" : "abc", "price" : 10, "quantity" : 10, "date" : ISODate("2014-04-04T21:23:13.331Z") }
+])
+
+//Total Price & Quantity (Day wise/Month Wise/Year Wise)
+
+
+//distinct values for item field
+db.sales.aggregate([ { $group : { _id : "$item" } } ] )
+
+//books collection
+db.books.insert([
+{ "_id" : 8751, "title" : "The Banquet", "author" : "Dante", "copies" : 2 },
+{ "_id" : 8752, "title" : "Divine Comedy", "author" : "Dante", "copies" : 1 },
+{ "_id" : 8645, "title" : "Eclogues", "author" : "Dante", "copies" : 2 },
+{ "_id" : 7000, "title" : "The Odyssey", "author" : "Homer", "copies" : 10 },
+{ "_id" : 7020, "title" : "Iliad", "author" : "Homer", "copies" : 10 }])
+
+//Get Title by Authors
+db.books.aggregate([{$group:{_id:"$author",books:{$push:"$title"}}}])
+
+//$out
+db.books.aggregate( [
+                      { $group : { _id : "$author", books: { $push: "$title" } } },
+                      { $out : "authors" }
+                  ] )
+
+//Group documents by Author
+db.books.aggregate(
+   [
+     { $group : { _id : "$author", books: { $push: "$$ROOT" } } }
+   ]
+)
+
+db.books.aggregate( [ { $indexStats: { } } ] )
+db.books.createIndex({"title":1})
+db.books.aggregate( [ { $indexStats: { } } ] )
+
+//$facet
+
+syntax:
+{ $facet:
+   {
+      <outputField1>: [ <stage1>, <stage2>, ... ],
+      <outputField2>: [ <stage1>, <stage2>, ... ],
+      ...
+
+   }
+}
+
+
+db.artwork.insert([
+{ "_id" : 1, "title" : "The Pillars of Society", "artist" : "Grosz", "year" : 1926,
+  "price" : NumberDecimal("199.99"),
+  "tags" : [ "painting", "satire", "Expressionism", "caricature" ] },
+{ "_id" : 2, "title" : "Melancholy III", "artist" : "Munch", "year" : 1902,
+  "price" : NumberDecimal("280.00"),
+  "tags" : [ "woodcut", "Expressionism" ] },
+{ "_id" : 3, "title" : "Dancer", "artist" : "Miro", "year" : 1925,
+  "price" : NumberDecimal("76.04"),
+  "tags" : [ "oil", "Surrealism", "painting" ] },
+{ "_id" : 4, "title" : "The Great Wave off Kanagawa", "artist" : "Hokusai",
+  "price" : NumberDecimal("167.30"),
+  "tags" : [ "woodblock", "ukiyo-e" ] },
+{ "_id" : 5, "title" : "The Persistence of Memory", "artist" : "Dali", "year" : 1931,
+  "price" : NumberDecimal("483.00"),
+  "tags" : [ "Surrealism", "painting", "oil" ] },
+{ "_id" : 6, "title" : "Composition VII", "artist" : "Kandinsky", "year" : 1913,
+  "price" : NumberDecimal("385.00"),
+  "tags" : [ "oil", "painting", "abstract" ] },
+{ "_id" : 7, "title" : "The Scream", "artist" : "Munch", "year" : 1893,
+  "tags" : [ "Expressionism", "painting", "oil" ] },
+{ "_id" : 8, "title" : "Blue Flower", "artist" : "O'Keefe", "year" : 1918,
+  "price" : NumberDecimal("118.42"),
+  "tags" : [ "abstract", "painting" ] }
+])
+
+199.99,280,76.04,167.30,483,385,118.42
+
+db.artwork.aggregate( [
+  {
+    $facet: {
+      "categorizedByTags": [
+        { $unwind: "$tags" },
+        { $sortByCount: "$tags" }
+      ]
+    }
+}])
+
+//$bucket
+db.artwork.aggregate( [
+  {
+    $facet: {
+	"categorizedByPrice": [
+       
+        { $match: { price: { $exists: 1 } } },
+        {
+          $bucket: {
+            groupBy: "$price",
+            boundaries: [  0, 150, 200, 300, 400 ],
+            default: "Other",
+            output: {
+              "count": { $sum: 1 },
+              "titles": { $push: "$title" }
+            }
+          }
+        }
+      ]
+     
+    }
+}])
+
+//$bucketAuto
+db.artwork.aggregate( [
+{
+    $facet:{
+    "categorizedByYears(Auto)": [
+        {
+          $bucketAuto: {
+            groupBy: "$year",
+            buckets: 6
+          }
+        }
+      ]
+   }
+}])
+
+//$sortByCount
+db.exhibits.insert([
+{ "_id" : 1, "title" : "The Pillars of Society", "artist" : "Grosz", "year" : 1926, "tags" : [ "painting", "satire", "Expressionism", "caricature" ] },
+{ "_id" : 2, "title" : "Melancholy III", "artist" : "Munch", "year" : 1902, "tags" : [ "woodcut", "Expressionism" ] },
+{ "_id" : 3, "title" : "Dancer", "artist" : "Miro", "year" : 1925, "tags" : [ "oil", "Surrealism", "painting" ] },
+{ "_id" : 4, "title" : "The Great Wave off Kanagawa", "artist" : "Hokusai", "tags" : [ "woodblock", "ukiyo-e" ] },
+{ "_id" : 5, "title" : "The Persistence of Memory", "artist" : "Dali", "year" : 1931, "tags" : [ "Surrealism", "painting", "oil" ] },
+{ "_id" : 6, "title" : "Composition VII", "artist" : "Kandinsky", "year" : 1913, "tags" : [ "oil", "painting", "abstract" ] },
+{ "_id" : 7, "title" : "The Scream", "artist" : "Munch", "year" : 1893, "tags" : [ "Expressionism", "painting", "oil" ] },
+{ "_id" : 8, "title" : "Blue Flower", "artist" : "O'Keefe", "year" : 1918, "tags" : [ "abstract", "painting" ] }
+])
+
+db.exhibits.aggregate( [ { $unwind: "$tags" },  { $sortByCount: "$tags" } ] )
+
+//$addfields
+db.scores.insert([
+{
+  _id: 1,
+  student: "Maya",
+  homework: [ 10, 5, 10 ],
+  quiz: [ 10, 8 ],
+  extraCredit: 0
+},
+{
+  _id: 2,
+  student: "Ryan",
+  homework: [ 5, 6, 5 ],
+  quiz: [ 8, 8 ],
+  extraCredit: 8
+}])
+
+
+db.scores.aggregate( [
+   {
+     $addFields: {
+       totalHomework: { $sum: "$homework" } ,
+       totalQuiz: { $sum: "$quiz" }
+     }
+   },
+   {
+     $addFields: { totalScore:
+       { $add: [ "$totalHomework", "$totalQuiz", "$extraCredit" ] } }
+   }
+])
+
+db.produce.insert([
+{
+   "_id" : 1,
+   "fruit" : [ "apples", "oranges" ],
+   "in_stock" : { "oranges" : 20, "apples" : 60 },
+   "on_order" : { "oranges" : 35, "apples" : 75 }
+},
+{
+   "_id" : 2,
+   "vegetables" : [ "beets", "yams" ],
+   "in_stock" : { "beets" : 130, "yams" : 200 },
+   "on_order" : { "beets" : 90, "yams" : 145 }
+}])
+
+db.produce.aggregate([
+   {
+     $replaceRoot: { newRoot: "$in_stock" }
+   }
+])
+
+db.produce.aggregate( [
+   {
+     $replaceRoot: { newRoot: "$on_order" }
+   }
+])
+
+//$count
+db.scores1.insert([
+{ "_id" : 1, "subject" : "History", "score" : 88 },
+{ "_id" : 2, "subject" : "History", "score" : 92 },
+{ "_id" : 3, "subject" : "History", "score" : 97 },
+{ "_id" : 4, "subject" : "History", "score" : 71 },
+{ "_id" : 5, "subject" : "History", "score" : 79 },
+{ "_id" : 6, "subject" : "History", "score" : 83 }
+])
+
+db.scores1.aggregate(
+  [
+    {
+      $match: {
+        score: {
+          $gt: 80
+        }
+      }
+    },
+    {
+      $count: "passing_scores"
+    }
+  ]
+)

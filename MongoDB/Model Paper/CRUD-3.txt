@@ -1,0 +1,77 @@
+local database : crud_database_3
+
+Question 1. Which of following commands below will append the value “5” if the field “a” has following properties ?
+
+Field “a” exists.
+Field “a” is an array field
+The value 5 is not already present in the array
+The _id is 12
+
+Option1: db.sample.update({_id:12,  a:{$exists:true}}, {$push:{a:5}}) - true
+Option2: db.sample.update({_id:12}, {$addToSet:{a:5}}) - true
+Option3: db.sample.update({_id:12}, {$push: {a:5}}) - true
+Option4: db.sample.update({$push:{a:5}}, {_id:12}) - Error
+Option5: db.sample.update({_id:12, a:{$exists:true}},{$addToSet:{a:5}}) - true
+
+db.sample.insert({_id:12, a:[1,2,3]})
+
+Question 2. Consider the following  example document from the sample collection. App documents in this collection have same schema
+
+db.sample1.insert({"_id":3, a:7, b:4 })
+
+Which of following query replace this document 
+{“_id”: 7, c:4}
+
+Option1 : db.sample1.update({"_id":3},{"_id":7, "c":4})
+Option2 : db.sample1.update({"_id":3}, {"$set": {"_id":7, "c":4}})
+Option3 : db.sample.update({"_id":3}, {"_id":7, "c":4, {"$unset" : ["a","b"]}})
+Option4 : db.sample.update({"_id":3}, {"_id":7, "c":4}, {"justOne":true})
+Option5 : This operation can not be done by single query - true
+
+
+Question 3. The building collection has documents of following form
+
+db.building.insert(
+{
+"_id" : {"address" : "123 Example Street"},
+"type":"residential",
+"residents":[{"name": "Alice", "Age":35},{"name":"Bob", "Age":22}] 
+});
+
+db.building.insert(
+{
+"_id" : {"address" : "124 Example Street"},
+"type":"municipal",
+"employees":[{"name": "Cherry", "Position":"Mayor"},{"name":"Dad", "Position":"Mayor’s  Assistant"}]
+});
+
+db.building.insert(
+{
+"_id" : "test",
+"type":"residential",
+"residents":({"name": "Alice", "Age":35},{"name":"Bob", "Age":22})
+});
+
+
+You would like to find all documents in the buildings collection where atleast one of residents has age 35.
+
+Option1: db.building.find({"residents.Age": 35}) - true
+Option2: db.building .find("residents":35})
+Option3: db.bulding.find({"residents" : {age: 35}})
+
+
+Question 4. After this update executed
+db.sample2.update({"b":17}, {"$set":{"b.$":"sleep"}},{multi:true})
+Which value in following document will be replaced? Assume that sample is stored in the sample collection.
+db.sample2.insert({"_id":2, "a":3, "b":[{"c":12}, 17, {"c":11, "d":16}]});
+
+Option1 :  3
+Option2 : {"c":12}
+Option3 : 17 --------------------------------------------------------------------------------------> true
+Option4 : {"c":11, "d":16}
+Option5 : None of the above
+
+$operator replace first matched element from document
+
+
+

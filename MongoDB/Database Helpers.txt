@@ -1,0 +1,624 @@
+*********************************************MongoDB Installation*********************************************
+//Install MongoDB in your Windows laptop
+Follow the instructions from MongoDB Website
+
+//Set Path for MongoDB
+System Variable (it should contain path till MongoDB Bin Directory)
+For Example ==> C:\Program Files\MongoDB\Server\3.4\bin
+
+//MongoDB Atlas
+https://cloud.mongodb.com (you can register new account completely free)
+
+//Mongo Atlas Connection String
+mongo "mongodb://cluster0-shard-00-00-bum8m.mongodb.net:27017,cluster0-shard-00-01-bum8m.mongodb.net:27017,cluster0-shard-00-02-bum8m.mongodb.net:27017/test?replicaSet=Cluster0-shard-0" --authenticationDatabase admin --ssl --username megha --password Test#123
+
+//different connection string
+mongo "mongodb://megha:Test#123@cluster0-shard-00-00-bum8m.mongodb.net:27017,cluster0-shard-00-01-bum8m.mongodb.net:27017,cluster0-shard-00-02-bum8m.mongodb.net:27017/test?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin"
+
+//MongoDB Shell (default it connects to test database)
+db
+*********************************************Default Database*********************************************
+admin
+==>by default it does not contain any collections
+==>It stores information about users & respective roles for the same
+
+db.system.users.find().pretty();
+
+local
+==>It is special database it stores data in the instance only
+==>it is internally used for replicate data in within replication members
+==>secondary are taking oplog records in batch, applies to their own instances
+
+By default it is generating startup_log collection.
+MongoDB Enterprise > db.startup_log.findOne();
+{
+        "_id" : "localhost.localdomain-1512744961781",
+        "hostname" : "localhost.localdomain",
+        "startTime" : ISODate("2017-12-08T14:56:01Z"),
+        "startTimeLocal" : "Fri Dec  8 15:56:01.781",
+        "cmdLine" : {
+                "config" : "/etc/mongod.conf",
+                "net" : {
+                        "bindIp" : "127.0.0.1",
+                        "port" : 27017
+                },
+                "processManagement" : {
+                        "fork" : true,
+                        "pidFilePath" : "/var/run/mongodb/mongod.pid"
+                },
+                "storage" : {
+                        "dbPath" : "/var/lib/mongo",
+                        "journal" : {
+                                "enabled" : true
+                        }
+                },
+                "systemLog" : {
+                        "destination" : "file",
+                        "logAppend" : true,
+                        "path" : "/var/log/mongodb/mongod.log"
+                }
+        },
+        "pid" : NumberLong(3589),
+        "buildinfo" : {
+                "version" : "3.4.10",
+                "gitVersion" : "078f28920cb24de0dd479b5ea6c66c644f6326e9",
+                "modules" : [
+                        "enterprise"
+                ],
+                "allocator" : "tcmalloc",
+                "javascriptEngine" : "mozjs",
+                "sysInfo" : "deprecated",
+                "versionArray" : [
+                        3,
+                        4,
+                        10,
+                        0
+                ],
+                "openssl" : {
+                        "running" : "OpenSSL 1.0.1e-fips 11 Feb 2013",
+                        "compiled" : "OpenSSL 1.0.1e-fips 11 Feb 2013"
+                },
+                "buildEnvironment" : {
+                        "distmod" : "rhel62",
+                        "distarch" : "x86_64",
+                        "cc" : "/opt/mongodbtoolchain/v2/bin/gcc: gcc (GCC) 5.4.0",
+                        "ccflags" : "-fno-omit-frame-pointer -fno-strict-aliasing -ggdb -pthread -Wall -Wsign-compare -Wno-unknown-pragmas -Winvalid-pch -Werror -O2 -Wno-unused-local-typedefs -Wno-unused-function -Wno-deprecated-declarations -Wno-unused-but-set-variable -Wno-missing-braces -fstack-protector-strong -fno-builtin-memcmp",
+                        "cxx" : "/opt/mongodbtoolchain/v2/bin/g++: g++ (GCC) 5.4.0",
+                        "cxxflags" : "-Woverloaded-virtual -Wno-maybe-uninitialized -std=c++11",
+                        "linkflags" : "-pthread -Wl,-z,now -rdynamic -Wl,--fatal-warnings -fstack-protector-strong -fuse-ld=gold -Wl,--build-id -Wl,-z,noexecstack -Wl,--warn-execstack -Wl,-z,relro -Wl,-rpath,/usr/lib64/perl5/CORE",
+                        "target_arch" : "x86_64",
+                        "target_os" : "linux"
+                },
+                "bits" : 64,
+                "debug" : false,
+                "maxBsonObjectSize" : 16777216,
+                "storageEngines" : [
+                        "devnull",
+                        "ephemeralForTest",
+                        "inMemory",
+                        "mmapv1",
+                        "queryable_mmapv1",
+                        "queryable_wt",
+                        "wiredTiger"
+                ]
+        }
+}
+
+
+config
+==>It is used in sharding to store metadata about sharding cluster
+==>You should not modify data for sharding clusters 
+==>DBAs can modify the data (in special situation only) but first you must take backup of sharding cluster
+
+1)actionlog (it stores information for balancer round)
+
+For Example (Sample Record)
+{
+        "_id" : "ip-172-18-87-236-2017-10-23T00:28:21.381+0000-59ed37a586f5f7f6ceba9b11",
+        "server" : "ip-172-18-87-236",
+        "clientAddr" : "",
+        "time" : ISODate("2017-10-23T00:28:21.381Z"),
+        "what" : "balancer.round",
+        "ns" : "",
+        "details" : {
+                "executionTimeMillis" : 2753,
+                "errorOccured" : false,
+                "candidateChunks" : 4,
+                "chunksMoved" : 0
+        }
+}
+
+
+2)changelog (It stores info dropcollection/dropdatabase/movechunk/split)
+==>dropCollection
+==>dropCollection.start
+==>dropDatabase
+==>dropDatabase.start
+==>moveChunk.start
+==>moveChunk.commit
+==>split
+==>multi-split
+
+For Example (Sample Record)
+{
+        "_id" : "mongodb71.odesk.com-2017-10-22T23:16:57.738+0000-59ed26e9b429ca37d19fec78",
+        "server" : "mongodb71.odesk.com",
+        "clientAddr" : "172.18.81.82:20991",
+        "time" : ISODate("2017-10-22T23:16:57.738Z"),
+        "what" : "moveChunk.from",
+        "ns" : "workplace_collab_object_references.objectReferences",
+        "details" : {
+                "min" : {
+                        "_id" : NumberLong("-8603358831693427518")
+                },
+                "max" : {
+                        "_id" : NumberLong("-8600522700566117328")
+                },
+                "step 1 of 6" : 0,
+                "step 2 of 6" : 313,
+                "to" : "prod6s1",
+                "from" : "prod6s3",
+                "note" : "aborted"
+        }
+}
+
+
+3)chunks(It stores range of records with minimum limit & maximum limit)     
+
+For Example (Sample Record)
+{
+        "_id" : "connections-api.contacts-createdByPersonUid_-2040482822774640889",
+        "lastmod" : Timestamp(275, 9),
+        "lastmodEpoch" : ObjectId("55a5f1d564c2ca081b7a3e30"),
+        "ns" : "connections-api.contacts",
+        "min" : {
+                "createdByPersonUid" : NumberLong("-2040482822774640889")
+        },
+        "max" : {
+                "createdByPersonUid" : NumberLong("-2012242220650734387")
+        },
+        "shard" : "prod6s2"
+}
+
+4)collections(It stores all collections within sharded cluster)
+{
+        "_id" : "connections-api.block_person",
+        "lastmod" : ISODate("2015-07-15T00:03:42.551Z"),
+        "dropped" : false,
+        "key" : {
+                "personIdBlocker" : "hashed"
+        },
+        "unique" : false,
+        "lastmodEpoch" : ObjectId("55a5a35e64c2ca081b7a3b80")
+}
+{
+        "_id" : "connections-api.contacts",
+        "lastmod" : ISODate("2015-07-15T05:38:38.123Z"),
+        "dropped" : false,
+        "key" : {
+                "createdByPersonUid" : "hashed"
+        },
+        "unique" : false,
+        "lastmodEpoch" : ObjectId("55a5f1d564c2ca081b7a3e30")
+}
+{
+        "_id" : "connections-api.invites",
+        "lastmod" : ISODate("2015-07-15T06:56:26.889Z"),
+        "dropped" : false,
+        "key" : {
+                "email" : "hashed"
+        },
+        "unique" : false,
+        "lastmodEpoch" : ObjectId("55a6041a64c2ca081b7a3e36")
+}
+
+5)databases(It stores databases within sharded clusters)
+mongos> db.databases.find({"partitioned" : true});
+{ "_id" : "connections-api", "partitioned" : true, "primary" : "prod6s1" }
+{ "_id" : "notifications_gateway", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "notifications_mobile_registration", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "permissions-api", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "user-preferences", "primary" : "prod6s2", "partitioned" : true }
+{ "_id" : "workplace-notification", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "workplace_collab", "partitioned" : true, "primary" : "prod6s1" }
+{ "_id" : "workplace_collab_object_references", "partitioned" : true, "primary" : "prod6s1" }
+{ "_id" : "workplace_collab_rooms", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "workplace_collab_stories", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "workplace_collab_subscriptions", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "workplace_notification_replyCounts", "partitioned" : true, "primary" : "prod6s2" }
+{ "_id" : "workplace_notification_replyToAddresses", "partitioned" : true, "primary" : "prod6s1" }
+{ "_id" : "workplace_webhooks", "partitioned" : true, "primary" : "prod6s2" }
+
+6)lockpings(It keeps track of the active components in the sharded cluster)
+{ "_id" : "ip-172-27-93-147.vpc.odesk.com:27063:1512145351:670547924", "ping" : ISODate("2017-12-07T05:49:18.210Z") }
+{ "_id" : "ip-172-27-93-147.vpc.odesk.com:27064:1512145353:293640150", "ping" : ISODate("2017-12-07T05:49:20.629Z") }
+{ "_id" : "ip-172-27-93-147.vpc.odesk.com:27017:1512145342:-1081919310", "ping" : ISODate("2017-12-07T05:49:39.206Z") }
+{ "_id" : "ip-172-27-93-147.vpc.odesk.com:27061:1512145346:36509349", "ping" : ISODate("2017-12-07T05:49:43.154Z") }
+{ "_id" : "ip-172-27-93-147.vpc.odesk.com:27062:1512145349:99364694", "ping" : ISODate("2017-12-07T05:49:45.736Z") }
+
+7)locks(It keeps logging distributed lock information within sharded cluster)
+mongos> db.lockpings.find();
+{
+        "_id" : "workplace_collab.test",
+        "process" : "mongodb61.ec2-usw1c.elance.com:27060:1413841179:1804289383",
+        "state" : 0,
+        "ts" : ObjectId("54499d588b23749580891de8"),
+        "when" : ISODate("2014-10-24T00:29:12.666Z"),
+        "who" : "mongodb61.ec2-usw1c.elance.com:27060:1413841179:1804289383:conn80:1681692777",
+        "why" : "drop"
+}
+{
+        "_id" : "workplace_collab.test_hash",
+        "process" : "mongodb62.ec2-usw1a.elance.com:27062:1428603928:1190257542",
+        "state" : 0,
+        "ts" : ObjectId("553944f1cd4eb9b81fc7bf43"),
+        "when" : ISODate("2015-04-23T19:16:01.660Z"),
+        "who" : "mongodb62.ec2-usw1a.elance.com:27062:1428603928:1190257542:conn551620:1229202716",
+        "why" : "migrate-{ _id: 0 }"
+}
+{
+        "_id" : "workplace_collab.test_nohash",
+        "process" : "mongodb61.ec2-usw1c.elance.com:27060:1413841179:1804289383",
+        "state" : 0,
+        "ts" : ObjectId("54499d628b23749580891dec"),
+        "when" : ISODate("2014-10-24T00:29:22.611Z"),
+        "who" : "mongodb61.ec2-usw1c.elance.com:27060:1413841179:1804289383:conn80:1681692777",
+        "why" : "drop"
+}
+
+8)mongos (all members of sharded cluster pings to every member of replicaset)
+{ "_id" : "ip-172-18-64-100:27017", "ping" : ISODate("2016-10-26T14:43:01.544Z"), "up" : 1055623, "waiting" : true, "mongoVersion" : "3.0.12" }
+{ "_id" : "ip-172-18-64-102:27017", "ping" : ISODate("2017-03-29T20:25:18.118Z"), "up" : 784168, "waiting" : true, "mongoVersion" : "3.0.14" }
+{ "_id" : "ip-172-18-64-104:27017", "ping" : ISODate("2017-09-14T02:21:43.996Z"), "up" : 3857219, "waiting" : false, "mongoVersion" : "3.0.15" }
+{ "_id" : "ip-172-18-64-105:27017", "ping" : ISODate("2017-07-13T21:24:11.964Z"), "up" : NumberLong(922), "waiting" : true,"mongoVersion" : "3.2.15"}
+{ "_id" : "ip-172-18-64-109:27017", "ping" : ISODate("2017-06-21T07:44:59.041Z"), "up" : 17791, "waiting" : true, "mongoVersion" : "3.0.15" }
+
+9)settings (contains the information that balancer status and chunksize)
+mongos> db.settings.find();
+{ "_id" : "balancer", "stopped" : false }
+{ "_id" : "chunksize", "value" : 64 }
+{ "_id" : "autosplit", "enabled" : true }
+
+10)shards (lists all shards of the cluser)
+{ "_id" : "prod6s1", "host" : "prod6s1/ip-172-27-93-147.vpc.odesk.com:27061" }
+{ "_id" : "prod6s2", "host" : "prod6s2/ip-172-27-93-147.vpc.odesk.com:27062" }
+{ "_id" : "prod6s3", "host" : "prod6s3/ip-172-27-93-147.vpc.odesk.com:27063" }
+{ "_id" : "prod6s4", "host" : "prod6s4/ip-172-27-93-147.vpc.odesk.com:27064" }
+
+11)system.indexes (provides the information indexes exist in config database on each collection)
+{ "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "config.chunks" }
+{ "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "config.changelog" }
+{ "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "config.mongos" }
+{ "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "config.actionlog" }
+{ "v" : 1, "key" : { "_id" : 1 }, "name" : "_id_", "ns" : "config.locks" }
+
+12)tags (holds the range for collection)        
+{
+    "_id" : { "ns" : "records.users", "min" : { "zipcode" : "10001" } },
+    "ns" : "records.users",
+    "min" : { "zipcode" : "10001" },
+    "max" : { "zipcode" : "10281" },
+    "tag" : "NYC"
+}
+
+13)version
+db.getCollection("version").find()
+{ "_id" : 1, "version" : 3 }
+
+14)config.system.sessions (Introduced MongoDB 3.6 Version)
+The system.sessions collection stores session records that are available to all members of the deployment (mongod or mongos)
+
+15)config.transactions
+The transactions collection stores records used to support retryable writes for replica sets and sharded clusters.
+
+*********************************************MongoDB Shell*********************************************
+The mongo shell is an interactive JavaScript interface to MongoDB. 
+You can use the mongo shell to query and update data as well as perform administrative operations.
+
+How to create database & collection ?
+
+db==>Current Database
+
+db.help(); ==> (all database commands)
+
+db.adminCommand(nameOrDocument)==> switch to admin user and db.runCommand
+db.auth(username, password)==>Any production system needs to provide security.
+db.cloneDatabase(fromhost)==>to copy remote database to local mongodb. it assumes remote database is having same name
+MongoDB Enterprise > db.commandHelp("createUser")==>help for: createUser Adds a user to the system
+MongoDB Enterprise > db.commandHelp("count")==>help for: count count objects in collection
+MongoDB Enterprise > db.commandHelp("aggregate")==>help for: count count objects in collection
+
+db.copyDatabase(fromdb, todb, fromhost)
+use db1
+db.testcoll.insert({x:1});
+use db2
+db.copyDatabase("db1","db2"); (it copies from same mongod instance)
+
+db.createCollection(<name>, { capped: <boolean>,               ==>Fixed Size
+                              autoIndexId: <boolean>,          ==>Deprecated
+                              size: <number>,		           ==>Maximum size in bytes
+                              max: <number>,                   ==>Maximum number of documents in 
+                              storageEngine: <document>,       ==>Allow user to specify engine per collection basis
+                              validator: <document>,           ==>specify validation rules
+                              validationLevel: <string>,       ==>Three types of validation
+                              validationAction: <string>,      ==>Error or Warning
+                              indexOptionDefaults: <document>, ==>WiredTiger Storage Engine Only
+                              viewOn: <string>,                ==>Name of Source Collection
+                              pipeline: <pipeline>,            ==>Aggregation pipeline to filter the documents
+                              collation: <document> } )        ==>Specify language level rules
+
+Important Note(Validator)
+==>Validation occurs during updates and inserts.existing documents do not undergo validation checks until modification
+==>You cannot specify a validator for collections in the admin, local, and config databases
+==>You cannot specify a validator for system.* collections
+
+Important Note(validationLevel)
+off==>No validation for inserts or updates
+strict==>Apply validation rules to all inserts and all updates (Default Option)
+moderate==>Apply validation rules to inserts and to updates on existing valid documents. Do not apply rules to updates on existing invalid documents.
+
+Important Note(validationAction)
+Error==>Default Documents must pass validation before the write occurs.Otherwise, the write operation fails.
+Warn==>	Documents do not have to pass validation. If the document fails validation, 
+the write operation logs the validation failure.
+
+indexOptionDefaults (WiredTiger Engine only)
+(Allows users to specify a default configuration for indexes when creating a collection)
+{<storage-engine-name>:<options>}
+
+Examples for Create Collection
+
+1)db.createCollection("fixed_size_coll", { capped : true, size : 5*1024*1024, max : 5000 } )
+2)db.createCollection("preallocate_space_coll", { size: 2*1024*1024*1024 } )
+3)collection with validation
+
+db.createCollection( "contacts",
+   {
+      validator: { $or:
+         [
+            { phone: { $type: "string" } },
+            { email: { $regex: /@mongodb\.com$/ } },
+            { status: { $in: [ "Unknown", "Incomplete" ] } }
+         ]
+      }
+   }
+)
+
+db.contacts.insert({x:1});                           //validation fails
+db.contacts.insert({phone:"1234567890"}) 	     //validation pass
+db.contacts.insert({email:"nilap.shah@mongodb.com"}) //validation pass
+
+4)Create Collection with storage engine and config options
+db.createCollection(
+   "users",
+   { storageEngine: { wiredTiger: { configString: "<option>=<setting>" } } }
+)
+
+5)db.createCollection with language specific rules
+db.createCollection("myColl",{collation:{locale:"fr"}});
+
+//creating view
+for(i=1;i<1000;i++){db.testcoll.insert({x:i, y:i, z:i, a:i});}
+
+//create view using helper
+db.createView("testview", "testcoll", [{$project:{x:1,y:1}}])
+//create view using commands
+db.runCommand({ create:"nilapview", viewOn:"testview", pipeline:[{$project:{x:1,y:1}}] })
+
+//Creating view on multiple collections
+db.orders.insert([{ "_id" : 1, "item" : "abc", "price" : NumberDecimal("12.00"), "quantity" : 2 },
+{ "_id" : 2, "item" : "jkl", "price" : NumberDecimal("20.00"), "quantity" : 1 },
+{ "_id" : 3, "item" : "abc", "price" : NumberDecimal("10.95"), "quantity" : 5 },
+{ "_id" : 4, "item" : "xyz", "price" : NumberDecimal("5.95"), "quantity" : 5 },
+{ "_id" : 5, "item" : "xyz", "price" : NumberDecimal("5.95"), "quantity" : 10 }])
+
+db.inventory.insert([{ "_id" : 1, "sku" : "abc", description: "product 1", "instock" : 120 },
+{ "_id" : 2, "sku" : "def", description: "product 2", "instock" : 80 },
+{ "_id" : 3, "sku" : "ijk", description: "product 3", "instock" : 60 },
+{ "_id" : 4, "sku" : "jkl", description: "product 4", "instock" : 70 },
+{ "_id" : 5, "sku" : "xyz", description: "product 5", "instock" : 200 }])
+
+db.createView (
+   "orderDetails",
+   "orders",
+   [
+     { $lookup: { from: "inventory", localField: "item", foreignField: "sku", as: "inventory_docs" } },
+     { $project: { "inventory_docs._id": 0, "inventory_docs.sku": 0 } }
+   ]
+)
+
+db.inventory.insert([{ "_id" : 6, "sku" : "abc", description: "product 1", "instock" : 120 },
+{ "_id" : 7, "sku" : "def", description: "product 2", "instock" : 80 },
+{ "_id" : 8, "sku" : "ijk", description: "product 3", "instock" : 60 },
+{ "_id" : 9, "sku" : "jkl", description: "product 4", "instock" : 70 },
+{ "_id" : 10, "sku" : "xyz", description: "product 5", "instock" : 200 }])
+
+db.orderDetails.find().pretty();
+
+//we can perform aggregation on it as well
+db.orderDetails.aggregate([{$sortByCount: "$item"}])
+
+==>Views use the indexes of the underlying collection
+==>you cannot create, drop or re-build indexes on the view directly nor get a list of indexes on the view
+==>You cannot specify a $natural sort on a view
+==>views do not support $, $elemMatch, $slice, $meta
+==>views can not be renamed
+==>views do not support mapreduce operations
+==>cannot perform shareded view while using $lookup and $graphlookup
+
+db.createUser(later in detail while usermanagement topic)
+
+use admin
+db.createUser(
+   { 
+     user: "root",
+     pwd: "root",
+     roles: [ "root"]
+   }
+)
+
+//current operation mongodb is running
+db.currentOp( { "$all": true } )
+
+//All write operations waiting for Lock
+db.currentOp(
+   {
+     "waitingForLock" : true,
+     $or: [
+        { "op" : { "$in" : [ "insert", "update", "remove" ] } },
+        { "query.findandmodify": { $exists: true } }
+    ]
+   }
+)
+
+//all active running operations 
+db.currentOp(
+   {
+     "active" : true,
+     "numYields" : 0,
+     "waitingForLock" : false
+   }
+)
+
+//Active Operations on a Specific Database
+db.currentOp(
+   {
+     "active" : true,
+     "secs_running" : { "$gt" : 3 },
+     "ns" : /^db1\./
+   }
+)
+
+//Active Indexing Operations
+db.currentOp(
+    {
+      $or: [
+        { op: "command", "query.createIndexes": { $exists: true } },
+        { op: "none", ns: /\.system\.indexes\b/ }
+      ]
+    }
+)
+
+//Drop Database
+db.dropDatabase(); //drops current database is in use
+
+db.eval(function, arguments) //Depreacated since 3.0(abilty to run javascripts code)
+
+//Forces the mongod to flush all pending write operations to disk 
+db.fsyncLock()
+==>used to take consistant backups
+
+//Unblock the writes
+db.fsyncUnlock()
+
+//db.getCollection() == db.collectionName...
+var authColl = db.getCollection("auth")
+
+//Get all Collection/views including validator + index Information
+db.getCollectionInfos()
+
+//Just to check whether write operation is successful or not on Replicasets
+db.getLastError()/db.getLastErrorObj()
+
+//get log verbosity information
+db.getLogComponents()
+
+//get connection object
+db.getMongo()
+
+//Allow to read from secondary
+db.getMongo().setSlaveOk()
+
+db.getName()
+
+db.getPrevError()
+
+db.getProfilingLevel()
+db.getProfilingStatus()
+
+db.getReplicationInfo()
+
+db.getSiblingDB("db1")
+
+db.getWriteConcern() //write concern
+
+//Get Machine Information
+db.hostInfo()
+
+//check the primary status
+db.isMaster()
+
+//kill specific operation
+db.killOp(opid)
+
+//list all database commands
+db.listCommands()
+
+loads all scripts in the system.js collection for the current database into the mongo shell session
+db.loadServerScripts() 
+
+//Ends current session
+db.logout()
+
+//provides information for each collection
+db.printCollectionStats()
+
+//print replication info
+db.printReplicationInfo()
+
+//print shardig information
+db.printShardingStatus()
+
+//print slave node information
+db.printSlaveReplicationInfo()
+
+//repair only current database
+db.repairDatabase()
+
+//Get Server Status
+db.serverStatus()
+
+//set Log Level
+db.setLogLevel(<level>, <component>)
+
+various components names
+-->accessControl
+-->command
+-->control
+-->geo
+-->index
+-->network
+-->query
+-->replication
+-->sharding
+-->storage
+-->storage.journal
+-->write
+
+db.setLogLevel(1)
+db.setLogLevel(2, "storage.journal" )
+
+//set profiling Level
+db.setProfilingLevel(level,<slowms>)
+
+db.setProfilingLevel(0)
+db.setProfilingLevel(1,100)
+db.setProfilingLevel(2) 
+
+db.setWriteConcern({w:1,j:true,wtimeout:100})
+db.getWriteConcern()
+db.unsetWriteConcern({w:1,j:true,wtimeout:100})
+
+//shutdown mongo server gracefully
+db.shutdownServer()
+
+//get database statistics
+db.stats();
+
+//get version
+db.version()
+
+
+
+
+

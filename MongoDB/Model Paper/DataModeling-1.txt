@@ -1,0 +1,79 @@
+﻿1.Which of following are good reasons to denormalize by producing copies of your data? Check all that apply 
+
+Option 1: There is never good reason to denormalize
+Option 2: To avoid having to Join data in the application layer
+Option 3: When you want to optimize for your most common read use case(s)       
+
+2. Suppose you are designing news website. This site will display articles. Each article will have comments Anyone clicking on a “show  all comments” button will see the first 50 comments and be able to page forwards 50 at a time until there are no more comments 5% less of readers click “show all comments”
+
+Of the following choices, which describes the strategy that best accommodates both of these use cases efficiently and will scale ?
+
+You may assume the application is read heavy?
+
+Option 1 : Store one document per comment and reference the next and last comment in each comment’s doc
+Option 2 : Store one document per comment and run a find() a query when comments are looked up.  Use skip() and limit() to get only get comments you want
+Option 3 : Embed all comments in each document, with unique key for each document
+Option 4: Embed the first 50 comments in each article documents.  Store the rest of comments in documents in a “comments “ collection.  Each comment document will hold 50 comments for a single article ordered by date. Each comment document will hold the previous and next comment document for an article. 
+Option 5: Embed all comments in the article’s documents representing the page. In a single array that will grow over time.
+
+3. You have a collection of customer data. You decide to add a field for “employer” to customer. Documents in this collection, but you do not know the employer for all customers Which one of following are true statements?
+
+Option 1: documents may moved in the data files when the new field is added 
+Option 2: You must add an employer field to all documents                                                    
+Option 3 : You must ensure the “employer” field set to NULL for all customers whose employer you do not know
+
+4. If you wanted to use MongoDB to track cash balances for each of an individual’s accounts, Which one of following schema designs  could you use for a person to transfer cash balances atomically between his/her own accounts atomically.
+(i.e. One Update per transfer)
+
+Option 1: A document for each account and another linked document for the balances
+Option 2: A document for each customer and a document in another collection for each account with its balance
+Option 3: None of the above
+Option 4: A document for each customer with an array of account documents                                    
+Option 5: A document for each account
+
+5. You insert 1000000 documents into a collection using MongoDB 2.6’s default settings . Each document is initially 301 bytes in size.
+
+You are planning to change your schema, updating each document to include additional data you have few options in terms of how much additional data to add, and would like to add as much as possible without causing any documents to move. Your options leave you with the following  choices in terms of increasing amount of data each document holds.
+
+Each option will enable you to add the largest number of bytes to each document without using a document to move on disk ?
+
+Option 1 : 0 bytes (leaving the total at 301 bytes)
+Option 2 : 150 bytes (increasing  the total for the document to 451 bytes)
+Option 3 : 200 bytes (increasing  the total for the document to 501 bytes)
+Option 4 : 250 bytes (increasing  the total for a document to 551 bytes)
+Option 5 : 300 bytes (increasing the total for a document to 601 bytes) 
+
+6. The scenario applies to the current question as well as next two
+
+db.stuff.insert({"_id": 1, "a":1, "b":1})
+db.stuff.insert({"_id": 2, "a":2, "b":3})
+db.stuff.insert({"_id": 3, "a":3, "b":6})
+db.stuff.insert({"_id": 4, "a":4, "b":10})
+db.stuff.insert({"_id": 5, "a":5, "b":15})
+
+You perform following query 
+db.stuff.update({ b: { $gte : 10 } }, { $set : { b : 15 } }, { multi :true , upsert : true } )
+
+How many documents will be matched by the query? 
+
+0
+1  ---> Modified
+2  ---> Matched
+3
+5
+
+7. How many documents are upserted by the query ?
+
+0  --> zero documents upserted
+1
+2
+3
+5
+
+8. How many documents are Updated by the query ?
+
+0  
+1  -----> 
+2
+3
+5

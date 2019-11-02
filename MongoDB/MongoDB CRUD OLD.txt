@@ -1,0 +1,407 @@
+db.products.insert( { item: "pen drive", qty: 25 } );
+db.products.insert( { _id: 10,item:"Mobile",qty: 25 });
+
+1.Insert One MongoDB Collection
+db.inventory.insertOne({item:"canvas",qty:100, tags:["cotton"],size:{h:28,w:35.5,uom:"cm"}})
+
+2.Insert Many documents
+db.inventory.insertMany(
+[ { item: "journal", qty: 25, tags: ["blank", "red"], size: { h: 14, w: 21, uom: "cm" } }, 
+{ item: "mat", qty: 85, tags: ["gray"], size: { h: 27.9, w: 35.5, uom: "cm" } }, 
+{ item: "mousepad", qty: 25, tags: ["gel", "blue"], size: { h: 19, w: 22.85, uom: "cm" } } ]) 
+
+db.restaurant.insertMany([
+{ "_id" : 1, "name" : "Central Perk Cafe", "Borough" : "Manhattan" },
+{ "_id" : 2, "name" : "Rock A Feller Bar and Grill", "Borough" : "Queens", "violations" : 2 },
+{ "_id" : 3, "name" : "Empire State Pub", "Borough" : "Brooklyn", "violations" : 0 }]);
+
+3.Update One Document
+db.restaurant.updateOne({"name":"Central Perk Cafe"},{$set:{"violations":3}});
+
+Update One Document with upsert Option
+db.restaurant.updateOne({"name":"Pizza Rat's Pizzaria"},
+{$set:{"_id":4,"violations":7,"Borough":"Manhattan"}},{upsert:true});
+
+update one document with upsert option
+db.restaurant.updateOne({"violations":{$gt:10}},{$set:{"Closed":true}},{upsert:true});
+
+4.Specify Collation
+db.mycoll.insertMany([
+{ _id: 1, category: "café", status: "A" },
+{ _id: 2, category: "cafe", status: "a" },
+{ _id: 3, category: "cafE", status: "a" }]);
+
+db.mycoll.updateOne(
+   { category: "cafe" },
+   { $set: { status: "Updated" } },
+   { collation: { locale: "fr", strength: 1 } }
+);
+
+db.mycoll.updateOne(
+   { category: "cafe" },
+   { $set: { status: "Updated" } }
+);
+
+
+5.Insert multiple documents in Restaurant collection.
+
+drop collection
+
+db.restaurant.insertMany([
+{ "_id" : 1, "name" : "Central Perk Cafe", "violations" : 3 },
+{ "_id" : 2, "name" : "Rock A Feller Bar and Grill", "violations" : 2 },
+{ "_id" : 3, "name" : "Empire State Sub", "violations" : 5 },
+{ "_id" : 4, "name" : "Pizza Rat's Pizzaria", "violations" : 8 }]);
+
+Update: 
+db.restaurant.updateMany({violations:{$gt:4}},{$set:{"Review":true}});
+
+6.Update many document with upsert
+
+db.inspectors.insertMany([
+{ "_id" : 92412, "inspector" : "F. Drebin", "Sector" : 1, "Patrolling" : true },
+{ "_id" : 92413, "inspector" : "J. Clouseau", "Sector" : 2, "Patrolling" : false },
+{ "_id" : 92414, "inspector" : "J. Clouseau", "Sector" : 3, "Patrolling" : true },
+{ "_id" : 92415, "inspector" : "R. Coltrane", "Sector" : 3, "Patrolling" : false }]);
+
+db.inspectors.updateMany(
+      { "Sector" : { $gt : 4 }, "inspector" : "R. Coltrane" },
+      { $set: { "Patrolling" : false } },
+      { upsert: true }
+   );
+
+7.Update with write concern
+
+db.restaurant.updateMany(
+       { "name" : "Pizza Rat's Pizzaria" },
+       { $inc: { "violations" : 3}, $set: { "Closed" : true } },
+       { w: "majority", wtimeout: 100 }
+   );
+
+8.$set,$unset,$inc
+
+db.restaurant.updateOne({"_id":1},{$set:{x:1}});
+
+db.restaurant.updateOne({"_id":1},{$set:{x:[1,2,3]}});
+
+db.restaurant.updateOne({"_id":1},{$set:{"address":{"address1":"address1 content","address2":"address2 content","city":"ahmedabad","pincode":"363001"}}});
+
+db.restaurant.updateOne({"_id":1},{$set:{"x":{"address1":"address1 content",
+"address2":"address2 content","city":"ahmedabad","pincode":"363001"}}});
+
+db.restaurant.updateOne({"_id":1},{$unset:{x:1}});
+
+db.restaurant.updateOne({"_id":1},{$set:{"address.address1":"address1 Revised content"}}); 
+
+db.restaurant.updateOne({"_id":1},{$inc:{y:1}});
+
+db.restaurant.updateOne({"_id":1},{$inc:{y:5}});
+
+db.restaurant.updateOne({"_id":1},{$inc:{y:-6}});
+
+9.Array Modifier
+db.blog.posts.insertOne({"title" : "A blog post","content" : "blog content"});
+
+db.blog.posts.updateOne({"title" : "A blog post"},
+{"$push":{"comments":{"name":"joe","email":"joe@example.com","content" : "nice post."}}})
+
+db.blog.posts.updateOne({"title" : "A blog post"},
+{"$push":{"comments":{"name":"prabhu","email":"prabhu@nuware.com","content" : "super post."}}})
+
+db.blog.posts.updateOne({"title" : "A blog post"},{"$push":{"comments":
+{$each:[
+{"name":"vijay","email":"vijay@nuware.com","content" : "vijay post."},
+{"name":"chetan","email":"chetan@nuware.com","content" : "chetan post."}
+]}
+}})
+
+db.blog.posts.updateOne({"title" : "A blog post"},
+{"$push":{"comments":{"name":"girish","email":"girish@nuware.com","content" : "super post."}}})
+
+db.blog.posts.updateOne({"title" : "A blog post"},{"$push":{"comments":
+{$each:[
+{"name":"new1","email":"vijay@nuware.com","content" : "vijay post."},
+{"name":"new2","email":"chetan@nuware.com","content" : "chetan post."}
+],
+$slice:-3,
+$sort:{name:1}
+}
+}})
+
+$addToSet
+db.users.insert({"name":"prabhu", emails:["prabhu@nuware.com"]});
+
+
+db.users.updateOne({"name":"prabhu"}, {$push:{emails:"prabhu@nuware.com"}});
+
+db.users.updateOne({"name":"prabhu"}, {$push:{emails:"prabhu@gmail.com"}});
+db.users.updateOne({"name":"chetan"}, {$push:{emails:"chetan@gmail.com"}});
+db.users.updateOne({"name":"prabhu"}, {$addToSet:{emails:"prabhu@nuware.com"}});
+
+
+10.Positional Operator
+db.blog.posts.updateOne({"title" : "A blog post","comments.name":"prabhu"},
+{$set:{"comments.$.email":"prabhu.sundaram@nuware.com"}})
+
+db.blog.posts.updateOne({"title" : "A blog post"},
+{$set:{"comments.0.email":"prabhu.sundaram@nuware.com"}})
+
+db.blog.posts.update({"title" : "A blog post"},{$pop:{comments:1}})
+
+11.Remove any element
+Delete/Remove 
+db.restaurant.deleteOne({"Review":true});
+db.restaurant.deleteMany({"Review":true});
+
+
+12.$eleMatch
+db.scores.insert([{_id:1,results:[82,85,88]},{_id:2,results:[75,88,89]}]);
+db.scores.find({results:{$gte:80,$lt:85}});
+
+db.scores.find({results:{$elemMatch:{$gte:80,$lt:85}}})
+
+13.$pop
+
+db.testpop.insert({a:[1,2,3,4,5,6,7,8,9,10]});
+db.testpop.update({},{$pop:{a:1}})
+db.testpop.update({},{$pop:{a:-1}})
+db.testpop.drop()
+
+db.testpop.insert({a:[2,2,2,5,5,5]});
+db.testpop.update({},{$pull:{a:5}})
+
+
+13.$all
+db.inventorytest.insertOne(
+{
+   code: "xyz",
+   tags: [ "school", "book", "bag", "headphone", "appliance" ],
+   qty: [
+          { size: "S", num: 10, color: "blue" },
+          { size: "M", num: 45, color: "blue" },
+          { size: "L", num: 100, color: "green" }
+        ]
+})
+
+db.inventorytest.insertOne(
+{
+   code: "abc",
+   tags: [ "appliance", "school", "book" ],
+   qty: [
+          { size: "6", num: 100, color: "green" },
+          { size: "6", num: 50, color: "blue" },
+          { size: "8", num: 100, color: "brown" }
+        ]
+})
+
+db.inventorytest.find({tags:{$all:["appliance","school","book"]}}).pretty();
+db.inventorytest.find({tags:{$all:["appliance","school","bag"]}}).pretty();
+
+14)Use ReplaceOne
+
+db.restaurant.insert([
+{ "_id" : 1, "name" : "Central Perk Cafe", "Borough" : "Manhattan",  "violations" : 3 },
+{ "_id" : 2, "name" : "Rock A Feller Bar and Grill", "Borough" : "Queens", "violations" : 2 },
+{ "_id" : 3, "name" : "Empire State Pub", "Borough" : "Brooklyn", "violations" : 0 }
+])
+
+db.restaurant.replaceOne(
+      { "name" : "Pizza Rat's Pizzaria" },
+      { "name" : "Nilap Change", "Borough" : "ooty", "violations" : 5 },
+      { upsert: true }
+   );
+
+db.restaurant.replaceOne(
+      { "name" : "Nilap Change" },
+      { "name" : "Nilap Change Edited"},
+      { upsert: true }
+   );
+
+db.restaurant.replaceOne(
+       { "name" : "Nilap Change Edited" },
+       { "name" : "Pizza Rat's Pub", "Borough" : "Manhattan", "violations" : 3 },
+       { w: "majority", wtimeout: 100 }
+   );
+
+
+15)Projections
+
+Similar commmad as select
+db.restaurant.find();
+
+Select + Where
+db.restaurant.find({"name" : "Central Perk Cafe"})
+
+Selective fields
+db.restaurant.find({},{"name":1, "violations":1});
+
+if you do not want hide the field
+db.restaurant.find({},{"address":0});
+
+db.users.insert({"name":"Prabhu", "age":35});
+db.users.insert({"name":"Nilap", "age":33});
+db.users.insert({"name":"Vijay", "age":31});
+db.users.insert({"name":"Gowri Shankar", "age":28});
+
+$gt/$lt/gte/lte
+db.users.find({"age":{$gt:30}});
+
+db.testcoll.insert({a:[1,2,3]});
+db.testcoll.insert({a:[2,3,4]});
+db.testcoll.insert({a:[3,4,5]});
+
+$in operator
+db.testcoll.find({a:{$in:[3,4]}})
+db.testcoll.find({a:{$in:[1,5]}})
+
+Result: ??
+
+$all operator
+db.testcoll.find({a:{$all:[3,4]}})
+
+try to find from specific position
+db.testcoll.find({"a.2":4});
+
+
+
+try yourseld $nin,$or
+
+findAndModify Operation
+db.people.findAndModify({query:{name:"Andy"},sort:{rating:1},update:{$inc:{score:1}},upsert:true})
+
+db.people.insert({name:"Tom",state:"active",rating:15});
+
+db.people.findAndModify({query:{name:"Tom",state:"active",rating:{$gt:10}},sort:{rating:1},update:{$inc:{score:1}}})
+
+db.people.findOneAndDelete({"name" : "Tom"});
+
+findOneAndDelete
+db.grades.insert([
+{ _id: 6305, name : "A. MacDyver", "assignment" : 5, "points" : 24 },
+{ _id: 6308, name : "B. Batlock", "assignment" : 3, "points" : 22 },
+{ _id: 6312, name : "M. Tagnum", "assignment" : 5, "points" : 30 },
+{ _id: 6319, name : "R. Stiles", "assignment" : 2, "points" : 12 },
+{ _id: 6322, name : "A. MacDyver", "assignment" : 2, "points" : 14 },
+{ _id: 6234, name : "R. Stiles", "assignment" : 1, "points" : 10 }
+])
+
+//find And Delete with sort option
+db.scores.findOneAndDelete(
+   { "name" : "A. MacDyver" },
+   { sort : { "points" : 1 } }
+)
+
+db.grades.findOneAndDelete({"name":"A. MacDyver"},{sort:{"points":1},maxTimeMS:5});
+
+//Delete based on collation
+db.mycoll.insert([
+{ _id: 1, category: "café", status: "A" }
+{ _id: 2, category: "cafe", status: "a" }
+{ _id: 3, category: "cafE", status: "a" }
+]);
+
+db.myColl.findOneAndDelete({category:"cafe",status:"a"},{collation:{locale:"fr",strength:1}});
+
+findOneAndReplace
+
+db.scores.insert([
+{ "_id" : 1521, "team" : "Fearful Mallards", "score" : 25000 },
+{ "_id" : 2231, "team" : "Tactful Mooses", "score" : 23500 },
+{ "_id" : 4511, "team" : "Aquatic Ponies", "score" : 19250 },
+{ "_id" : 5331, "team" : "Cuddly Zebras", "score" : 15235 },
+{ "_id" : 3412, "team" : "Garrulous Bears", "score" : 22300 }
+]);
+
+db.scores.findOneAndReplace(
+   { "score" : { $lt : 20000 } },
+   { "team" : "Observant Badgers", "score" : 20000 }
+)
+
+db.scores.findOneAndReplace(
+   { "score" : { $lt : 20000 } },
+   { "team" : "Observant Badgers", "score" : 20000 },
+   {returnNewDocument: true}
+)
+
+//findOneAndUpdate
+db.scores.insert([
+{ _id: 6305, name : "A. MacDyver", "assignment" : 5, "points" : 24 },
+{ _id: 6308, name : "B. Batlock", "assignment" : 3, "points" : 22 },
+{ _id: 6312, name : "M. Tagnum", "assignment" : 5, "points" : 30 },
+{ _id: 6319, name : "R. Stiles", "assignment" : 2, "points" : 12 },
+{ _id: 6322, name : "A. MacDyver", "assignment" : 2, "points" : 14 },
+{ _id: 6234, name : "R. Stiles", "assignment" : 1, "points" : 10 }]
+);
+
+db.scores.findOneAndUpdate(
+   { "name" : "R. Stiles" },
+   { $inc: { "points" : 5 } }
+)
+
+
+Customers collections with validation
+
+db.createCollection("customers", {
+  validator: {
+    $and: [
+      {
+        "firstName": {$type: "string", $exists: true}
+      },
+      {
+        "lastName": { $type: "string", $exists: true}      
+      },
+      {
+        "phoneNumber": { 
+          $type: "string", 
+          $exists: true,
+          $regex: /^[0-9]{3}-[0-9]{3}-[0-9]{4}$/
+        }
+      },
+      {
+        "email": {
+          $type: "string",
+          $exists: true
+        }
+      }
+    ]
+  }
+})
+
+db.customers.insertOne({"firstName":"Nilap","lastName":"Shah","phoneNumber":"123-456-7890","email":"nilapkumar.shah@nuware.com"});
+
+db.customers.insertOne({"firstName":1,"lastName":"Shah","phoneNumber":"123-456-7890","email":"nilapkumar.shah@nuware.com"});
+
+Products collection with validation
+
+db.createCollection("productsval", {
+  validator: {
+    $and: [
+      {
+        "name": {$type: "string", $exists: true}
+      },
+      {
+        "listPrice": { $type: "double", $exists: true}      
+      },
+      {
+        "sku": { $type: "int", $exists: true}
+      }
+    ]
+  }
+})
+
+db.productsval.insertOne({name: "Chocolate Chip",listPrice: 2.99,sku: 1})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

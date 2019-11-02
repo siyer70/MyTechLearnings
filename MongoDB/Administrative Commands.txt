@@ -1,0 +1,438 @@
+1)Current Operations MongoDB
+db.currentOp(
+   {
+     "waitingForLock" : true,
+     $or: [
+        { "op" : { "$in" : [ "insert", "update", "remove" ] } },
+        { "query.findandmodify": { $exists: true } }
+    ]
+   }
+)
+
+db.currentOp(
+   {
+     "active" : true,
+     "numYields" : 0,
+     "waitingForLock" : false
+   }
+)
+
+db.currentOp(
+   {
+     "active" : true,
+     "secs_running" : { "$gt" : 3 },
+     "ns" : /^shardingtest\./
+   }
+)
+
+db.currentOp(
+    {
+      $or: [
+        { op: "command", "query.createIndexes": { $exists: true } },
+        { op: "none", ns: /\.system\.indexes\b/ }
+      ]
+    }
+)
+
+2)cloneCollection-->copy from address
+use users
+db.cloneCollection('mongodb.example.net:27017', 'profiles', { 'active' : true } )
+
+3)db.adminCommand()
+syntax:
+use shardingtest
+db.orders.insert({x:1});
+
+db.adminCommand(
+  {
+     renameCollection: "shardingtest.orders",
+     to: "shardingtest.orders2017"
+  }
+)
+
+4)db.aggregate([{}])-->group of pipelines
+
+5)copyDb (limitation can not work from sharded database)
+use importdb
+db.cloneDatabase("hostname")
+or
+db.adminCommand({
+   copydb: 1,
+   fromdb: "shardingtest",
+   todb: "shardingtest1"
+})
+
+6)db.fsyncLock()-->We can fire before taking backup
+forces the mongod to flush all pending write operations to disk and locks the entire mongod instance to prevent additional writes operations
+
+7)db.fsyncUnlock()
+unlock entire moongod instance and accepts the write operations for mongod instance
+
+8)db.getCollection()-->getCollection Object in mongo script
+db.getCollection("shardingcoll");
+
+9)db.getCollectionInfos({filter})
+db.getCollectionInfos({"name":"shardcoll"});
+
+10)db.getCollectionNames();-->return all collection names
+
+11)db.getLastError() or db.getLastErrorObj()
+
+12)db.getLogComponents()
+Returns the current verbosity settings
+
+13)db.getMongo()
+
+14)db.getName();
+
+15)getPrevError is not supported in sharded environments--> not supported on sharded environments
+
+16)always runs command on admin database
+use admin
+db.getProfilingLevel();
+
+17)run against replicaset
+db.getReplicationInfo();
+
+18)db.getSiblingDB(name)-->get Particular database object
+
+19)db.getWriteConcern()
+
+20)db.listCommands();
+
+21)db.logout();
+
+mongos> db
+shardingtest
+mongos>
+mongos>
+mongos> db = db.getSiblingDB('admin')
+admin
+mongos> db
+admin
+mongos> db.logout();
+{
+        "ok" : 1,
+        "operationTime" : Timestamp(1540926253, 95),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1540926253, 95),
+                "signature" : {
+                        "hash" : BinData(0,"x7Pa2o/jJBDnVQMS1aN685fkyHg="),
+                        "keyId" : NumberLong("6617880468048052245")
+                }
+        }
+}
+mongos> db
+admin
+mongos> show dbs
+2018-10-30T20:05:34.924+0100 E QUERY    [js] Error: listDatabases failed:{
+        "ok" : 0,
+        "errmsg" : "command listDatabases requires authentication",
+        "code" : 13,
+        "codeName" : "Unauthorized",
+        "operationTime" : Timestamp(1540926333, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1540926333, 1),
+                "signature" : {
+                        "hash" : BinData(0,"wGoT2N/2AkqCgAlGI0NTzAbo7GU="),
+                        "keyId" : NumberLong("6617880468048052245")
+                }
+        }
+} :
+_getErrorWithCode@src/mongo/shell/utils.js:25:13
+Mongo.prototype.getDBs@src/mongo/shell/mongo.js:65:1
+shellHelper.show@src/mongo/shell/utils.js:865:19
+shellHelper@src/mongo/shell/utils.js:755:15
+
+22)db.printCollectionStats()
+
+23)db.printReplicationInfo()
+
+24)db.printShardingStatus()
+
+25)db.printSlaveReplicationInfo()
+
+26)db.repairDatabase();
+
+27)mongos> db.serverStatus();
+{
+        "host" : "localhost.localdomain:28017",
+        "version" : "4.0.0",
+        "process" : "mongos",
+        "pid" : NumberLong(3195),
+        "uptime" : 23282,
+        "uptimeMillis" : NumberLong(23282524),
+        "uptimeEstimate" : NumberLong(23282),
+        "localTime" : ISODate("2018-10-30T19:17:29.207Z"),
+        "asserts" : {
+                "regular" : 0,
+                "warning" : 0,
+                "msg" : 0,
+                "user" : 694,
+                "rollovers" : 0
+        },
+        "connections" : {
+                "current" : 1,
+                "available" : 818,
+                "totalCreated" : 5
+        },
+        "extra_info" : {
+                "note" : "fields vary by platform",
+                "page_faults" : 1707
+        },
+        "logicalSessionRecordCache" : {
+                "activeSessionsCount" : 0,
+                "sessionsCollectionJobCount" : 73,
+                "lastSessionsCollectionJobDurationMillis" : 0,
+                "lastSessionsCollectionJobTimestamp" : ISODate("2018-10-30T19:15:55.298Z"),
+                "lastSessionsCollectionJobEntriesRefreshed" : 0,
+                "lastSessionsCollectionJobEntriesEnded" : 0,
+                "lastSessionsCollectionJobCursorsClosed" : 0,
+                "transactionReaperJobCount" : 0,
+                "lastTransactionReaperJobDurationMillis" : 0,
+                "lastTransactionReaperJobTimestamp" : ISODate("2018-10-30T12:49:29.490Z"),
+                "lastTransactionReaperJobEntriesCleanedUp" : 0
+        },
+        "network" : {
+                "bytesIn" : NumberLong(1150075537),
+                "bytesOut" : NumberLong(850715337),
+                "physicalBytesIn" : NumberLong(1150075537),
+                "physicalBytesOut" : NumberLong(850715337),
+                "numRequests" : NumberLong(5000392),
+                "compression" : {
+                        "snappy" : {
+                                "compressor" : {
+                                        "bytesIn" : NumberLong("3700895609"),
+                                        "bytesOut" : NumberLong("3168777679")
+                                },
+                                "decompressor" : {
+                                        "bytesIn" : NumberLong(1266148997),
+                                        "bytesOut" : NumberLong(1930589299)
+                                }
+                        }
+                },
+                "serviceExecutorTaskStats" : {
+                        "executor" : "passthrough",
+                        "threadsRunning" : 1
+                }
+        },
+        "opcounters" : {
+                "insert" : 5000001,
+                "query" : 43,
+                "update" : 0,
+                "delete" : 0,
+                "getmore" : 0,
+                "command" : 5000334
+        },
+        "sharding" : {
+                "configsvrConnectionString" : "rsconfig/localhost.localdomain:60001",
+                "lastSeenConfigServerOpTime" : {
+                        "ts" : Timestamp(1540927045, 4),
+                        "t" : NumberLong(2)
+                },
+                "maxChunkSizeInBytes" : NumberLong(67108864)
+        },
+        "shardingStatistics" : {
+                "catalogCache" : {
+                        "numDatabaseEntries" : NumberLong(4),
+                        "numCollectionEntries" : NumberLong(2),
+                        "countStaleConfigErrors" : NumberLong(2),
+                        "totalRefreshWaitTimeMicros" : NumberLong(463278944),
+                        "numActiveIncrementalRefreshes" : NumberLong(0),
+                        "countIncrementalRefreshesStarted" : NumberLong(79),
+                        "numActiveFullRefreshes" : NumberLong(0),
+                        "countFullRefreshesStarted" : NumberLong(18),
+                        "countFailedRefreshes" : NumberLong(3)
+                }
+        },
+        "tcmalloc" : {
+                "generic" : {
+                        "current_allocated_bytes" : 6871528,
+                        "heap_size" : 14123008
+                },
+                "tcmalloc" : {
+                        "pageheap_free_bytes" : 1986560,
+                        "pageheap_unmapped_bytes" : 4096,
+                        "max_total_thread_cache_bytes" : 517996544,
+                        "current_total_thread_cache_bytes" : 1135928,
+                        "total_free_bytes" : 5260824,
+                        "central_cache_free_bytes" : 335296,
+                        "transfer_cache_free_bytes" : 3789600,
+                        "thread_cache_free_bytes" : 1135928,
+                        "aggressive_memory_decommit" : 0,
+                        "pageheap_committed_bytes" : 14118912,
+                        "pageheap_scavenge_count" : 5,
+                        "pageheap_commit_count" : 84,
+                        "pageheap_total_commit_bytes" : 19410944,
+                        "pageheap_decommit_count" : 5,
+                        "pageheap_total_decommit_bytes" : 5292032,
+                        "pageheap_reserve_count" : 13,
+                        "pageheap_total_reserve_bytes" : 14123008,
+                        "spinlock_total_delay_ns" : 12413,
+                        "formattedString" : "------------------------------------------------\nMALLOC:        6872104 (    6.6 MiB) Bytes in use by application\nMALLOC: +      1986560 (    1.9 MiB) Bytes in page heap freelist\nMALLOC: +       335296 (    0.3 MiB) Bytes in central cache freelist\nMALLOC: +      3789600 (    3.6 MiB) Bytes in transfer cache freelist\nMALLOC: +      1135352 (    1.1 MiB) Bytes in thread cache freelists\nMALLOC: +      1204480 (    1.1 MiB) Bytes in malloc metadata\nMALLOC:   ------------\nMALLOC: =     15323392 (   14.6 MiB) Actual memory used (physical + swap)\nMALLOC: +         4096 (    0.0 MiB) Bytes released to OS (aka unmapped)\nMALLOC:   ------------\nMALLOC: =     15327488 (   14.6 MiB) Virtual address space used\nMALLOC:\nMALLOC:            837              Spans in use\nMALLOC:             20              Thread heaps in use\nMALLOC:           4096              Tcmalloc page size\n------------------------------------------------\nCall ReleaseFreeMemory() to release freelist memory to the OS (via madvise()).\nBytes released to the OS take up virtual address space but no physical memory.\n"
+                }
+        },
+        "mem" : {
+                "bits" : 64,
+                "resident" : 13,
+                "virtual" : 296,
+                "supported" : true
+        },
+        "metrics" : {
+                "cursor" : {
+                        "timedOut" : NumberLong(0),
+                        "open" : {
+                                "multiTarget" : NumberLong(0),
+                                "singleTarget" : NumberLong(0),
+                                "pinned" : NumberLong(0),
+                                "total" : NumberLong(0)
+                        }
+                },
+                "commands" : {
+                        "<UNKNOWN>" : NumberLong(5),
+                        "aggregate" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(5)
+                        },
+                        "balancerStatus" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(2)
+                        },
+                        "buildInfo" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(10)
+                        },
+                        "collStats" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(14)
+                        },
+                        "connectionStatus" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(3)
+                        },
+                        "copydb" : {
+                                "failed" : NumberLong(1),
+                                "total" : NumberLong(1)
+                        },
+                        "count" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(11)
+                        },
+                        "createIndexes" : {
+                                "failed" : NumberLong(1),
+                                "total" : NumberLong(11)
+                        },
+                        "currentOp" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(4)
+                        },
+                        "drop" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(1)
+                        },
+                        "enableSharding" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(1)
+                        },
+                        "find" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(43)
+                        },
+                        "getLastError" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(2)
+                        },
+                        "getParameter" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(1)
+                        },
+                        "getPrevError" : {
+                                "failed" : NumberLong(1),
+                                "total" : NumberLong(1)
+                        },
+                        "hostInfo" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(1)
+                        },
+                        "insert" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(5000001)
+                        },
+                        "isMaster" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(42)
+                        },
+                        "listCollections" : {
+                                "failed" : NumberLong(2),
+                                "total" : NumberLong(41)
+                        },
+                        "listCommands" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(1)
+                        },
+                        "listDatabases" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(8)
+                        },
+                        "listIndexes" : {
+                                "failed" : NumberLong(1),
+                                "total" : NumberLong(1)
+                        },
+                        "logout" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(3)
+                        },
+                        "profile" : {
+                                "failed" : NumberLong(1),
+                                "total" : NumberLong(2)
+                        },
+                        "renameCollection" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(1)
+                        },
+                        "replSetGetStatus" : {
+                                "failed" : NumberLong(140),
+                                "total" : NumberLong(140)
+                        },
+                        "saslContinue" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(12)
+                        },
+                        "saslStart" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(6)
+                        },
+                        "serverStatus" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(1)
+                        },
+                        "shardCollection" : {
+                                "failed" : NumberLong(1),
+                                "total" : NumberLong(2)
+                        },
+                        "whatsmyuri" : {
+                                "failed" : NumberLong(0),
+                                "total" : NumberLong(5)
+                        }
+                }
+        },
+        "ok" : 1,
+        "operationTime" : Timestamp(1540927046, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1540927046, 1),
+                "signature" : {
+                        "hash" : BinData(0,"cWzbms4me3TYRaIdCmHfSQpMkVI="),
+                        "keyId" : NumberLong("6617880468048052245")
+                }
+        }
+}
+
+28)how to change writeConcern
+cfg = rs.conf()
+cfg.settings.getLastErrorDefaults = { w: "majority", wtimeout: 5000 }
+rs.reconfig(cfg)
+
+
+
+
+

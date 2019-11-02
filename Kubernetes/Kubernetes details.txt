@@ -1,0 +1,1341 @@
+Install go
+
+Install kind
+GO111MODULE="on" go get sigs.k8s.io/kind@v0.5.1
+
+add GOPATH/bin in path
+
+Create clusterx`
+kind create cluster
+
+export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+
+echo $KUBECONFIG
+/Users/chasrini/.kube/kind-config-kind
+
+kubectl cluster-info
+Kubernetes master is running at https://127.0.0.1:54785
+KubeDNS is running at https://127.0.0.1:54785/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+kubectl version --short
+Client Version: v1.14.6
+Server Version: v1.15.3
+
+Sample specs and kubernetes app in the following directory
+/Users/chasrini/nodejs-workspace/todo-app
+
+/Users/chasrini/nodejs-workspace/todo-app/kubernetes
+(kubernetes specs are in this folder)
+
+/Users/chasrini/nodejs-workspace/todo-db/
+
+Container Orchaestration Engines
+--------------------------------
+Context
+
+- Google runs 2 billion containers in a week on average
+	- how these are created and managed
+	- how do they connect and communicate
+	- how do they scale up and down as per the traffic demands
+
+- Where containers are not needed
+	- For startups with 2 or 3 apps, 
+		- they can manually scale the apps using some basic tools
+
+- When that will be a problem 
+	- It becomes really complex, when you have hundreds of apps i.e.
+		- deploying and managing these without orchaestration tools is a nightmare
+
+- Most likely based on the above, you would be running in those inside a container
+
+- But there are two problems with Docker engine
+	- Clustering (without Docker Swaarm mode)
+		- you are limited to managing these on a single host (SPOF)
+	- Scalability
+		- scaling the application with just the docker engine is not easy
+
+- Both the problems are solved by Container Orchaestration Engine
+
+- So what is COE?
+	- COE automates deploying, managing, scaling containerised apps on a group of servers
+
+	- Popular ones are
+		- Kubernetes
+		- Docker Swarm
+		- Apache Mesos
+
+	- DevOps teams uses these tools to control and automate most of these tasks
+		- when it comes to managing the lifecycle of the container
+
+	Key Features
+
+	- Clustering
+		- We have a Master server where COE is installed and configured and then we join the worker nodes together along with the master server to form the cluster of servers
+		- Master Server acts as a cluster manager that manages the worker nodes inside the cluster
+
+		- Clustering, in turn, enables two other benefits
+			- Fault Tolerance
+			- Scalability	
+
+	- Scheduling
+		- Schedules the apps on one or more nodes that matches the requested config (that are submitted to the COE earlier)
+
+		- For example, if the ssd drive is stated in the config file, it is the responsibility of the COE to find the nodes that have ssd drive and schedule the app there
+
+
+	- Scalability
+		- Scalability refers to increasing/decreasing the number of application instances / node instances as per the traffic demand
+
+	- Load Balancing
+		- COE distributes the traffic to all application and node instances equally
+
+	- Fault Tolerance
+		- Containerised app runs in containers which runs in nodes. Typically, a monitoring process runs in worker nodes that monitors the containers all the time and submits the health status to Master server. When the COE finds that containers failed or stopped for any unknown reason, then it recreates the container in the same healthy node. If the COE finds that the node itself is not responding, then it re-provisions the impacted containers in a healthy node insider the cluster.
+
+	- Deployment
+		- There are different ways of deploying a new version (say v2)
+			- Recreate - removes / overwrites v1 with v2 (Downtime)
+			- Rolling update / Canary deployment - slowly replaces v1 with v2 (no downtime)
+
+
+Architecture
+============
+
+1. Master
+2. Worker Nodes
+
+
+Kubernetes (K8S) Cluster Services with API
+One or more Worker nodes 
+
+
+Master -> n Worker Nodes
+
+Master
+======
+- Responsible for managing the full cluster comprising worker nodes and its configuration
+- Responsible for Scheduling, Provisioning, Controlling and Exposing API to clients
+- It coordinates all the activities inside the cluster and communicates with worker nodes
+- there are generally more than one master to avoid single point of failures
+
+Components of Master (4 key components mentioned below)
+API Server 
+----------
+(acts as a gatekeeper for the entire cluster)
+	- It is the gatekeeper for the entire cluster
+	- all the administrative tasks are performed by the API Server
+	- all create, update, delete, display object request goes through api server
+	- it exposes api for every operations
+	- validates and configures api objects
+		- pods, services, replication controllers, deployments
+	- it accomplishes the above via kubectl (kubectl -> api - > api server)
+	- All the user requests need to pass through this. After the requests are processed, the cluster state is stored in the distributed key-value store.
+Scheduler
+---------
+	- responsible for physically scheduling pods across multiple nodes
+	- works based on the constraints defined in the configuration files
+		- for eg (cpu: 1 core, memory: 10 gb, disk: ssd)
+		- along with other affinity or constraints declared in the artifact
+Control Manager
+---------------
+	- comprises of 4 controllers
+		- Node Controller
+		- Replication Controller
+		- Endpoint controller
+		- Service Account and token Controllers
+	- ensures the health of the cluster and all nodes are up and running
+
+etcd
+----
+	- distributed key value lightweight database
+	- used for storing the current cluster state at any point of time
+	- single source of truth for all the 
+		- nodes, secrets, controllers, components, masters forming K8S Cluster
+	- used for storing configs, feature flags
+
+
+Worker Nodes
+============
+- Can be a VM / Physical machines where containers are deployed
+- Every node in K8S Cluster must run a container runtime such as Docker, Rocket
+- Two other components required to communicate with Master
+	- Kubelet
+		- Primary Node agent that runs on each node in the cluster
+		- Ensures container specified in the POD Spec are running and healthy
+		  (POD Spec are submitted to the API Server component in Master)
+		- automatically restarts the POD where necessary
+		(if node itself fails, then the master manages restarts it in new node)
+		- depends on pod is behind replica set or replication controller or deployment
+
+	- KubeProxy
+		- Responsible for maintaining entire network configuration
+		- maintains distributed network across all nodes, pods, containers
+		- exposes services to the outside world
+		- core networking component inside the K8S
+
+- CAdvisers and other plug-ins
+
+
+
+- Each Worker Nodes contains
+	- 1..n PODs
+		- 1..n Containers
+			- Your Service
+
+POD
+---
+Smallest deployment unit in K8S is Pod OR scheduling units in POD
+
+It contains one or more containers
+	containers are runtime environments for containerized applications
+
+
+- Each POD has unique IP address inside the K8S cluster
+- Kubernetes wraps one or more containers into a higher-level structure called a pod. 
+- Any containers in the same pod will share the same resources and local network. 
+- Containers can easily communicate with other containers in the same pod as though they were on the same machine while maintaining a degree of isolation from others.
+
+- Pods are used as the unit of replication in Kubernetes. 
+- Kubernetes can be configured to deploy new replicas of your pod to the cluster 
+- It is standard to have multiple copies of a pod running at any time in a production system to allow load balancing and failure resistance.
+
+Pods can hold multiple containers, but you should limit yourself when possible. Because pods are scaled up and down as a unit, all containers in a pod must scale together, regardless of their individual needs. This leads to wasted resources and an expensive bill. To resolve this, pods should remain as small as possible, typically holding only a main process and its tightly-coupled helper containers (these helper containers are typically referred to as “side-cars”).
+
+Containers
+----------
+- Containers provide the runtime environment for applications
+- Consists of Applications, libraries and dependencies
+
+
+Desired State Management (Configuration) - (POD Spec)
+Application configuration file (for eg: App1.yaml)
+Contains the Pod details
+	-POD1 (running two containers - typically one container per Pod is recommended)
+		- Container image1
+		- Container image2
+
+	- Replica details (how many replica of POD1 needed)
+
+This app1.yml file is fed to K8S cluster services API and that figures out how to schedule and deploy those and monitors (and if required relaunches if any of the pod dies)
+
+Deployments
+-----------
+Although pods are the basic unit of computation in Kubernetes, they are not typically directly launched on a cluster. Instead, pods are usually managed by one more layer of abstraction: the deployment.
+
+A deployment’s primary purpose is to declare how many replicas of a pod should be running at a time. When a deployment is added to the cluster, it will automatically spin up the requested number of pods, and then monitor them. If a pod dies, the deployment will automatically re-create it.
+
+Using a deployment, you don’t have to deal with pods manually. You can just declare the desired state of the system, and it will be managed for you automatically.
+
+
+Ingres
+------
+By default, Kubernetes provides isolation between pods and the outside world. If you want to communicate with a service running in a pod, you have to open up a channel for communication. This is referred to as ingress.
+
+There are multiple ways to add ingress to your cluster. The most common ways are by adding either an Ingress controller, or a LoadBalancer. 
+
+kubectl and gcloud
+The most important tool you use when setting up a Kubernetes environment is the kubectl command. This command allows you to interact with the Kubernetes API. It is used to create, update, and delete Kubernetes resources like pods, deployments, and load balancers.
+
+Setting Up a Cluster 
+--------------------
+# create the cluster
+# by default, 3 standard nodes are created for our cluster
+gcloud container clusters create my-cluster --zone us-west1-a
+# get the credentials so we can manage it locally through kubectl
+# creating a cluster can take a few minutes to complete
+gcloud container clusters get-credentials my-cluster \
+     --zone us-west1-a
+
+We now have a provisioned cluster made up of three n1-standard1 nodes
+
+
+Sample sample.yaml file
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gitea-pod
+spec:
+  containers:
+  - name: gitea-container
+    image: gitea/gitea:1.4
+
+
+Line 2 declares that the type of resource we are creating is a pod; line 1 says that this resource is defined in v1 of the Kubernetes API. Lines 3–8 describe the properties of our pod. In this case, the pod is unoriginally named “gitea-pod”, and it contains a single container we’re calling “gitea-container”.
+
+Line 8 is the most interesting part. This line defines which container image we want to run; in this case, the image tagged 1.4 in the gitea/gitea repository. Kubernetes will tell the built-in container runtime to find the requested container image, and pull it down into the pod. Because the default container runtime is Docker, it will find the gitea repository hosted on Dockerhub, and pull down the requested image.
+
+
+Executing the pods by applying yaml file using the following command
+kubectl apply -f sample.yaml
+
+
+Command to list the pods
+kubectl get pods
+
+
+Command to list the container logs
+kubectl logs -f gitea-pod
+
+
+delete the pod
+kubectl delete -f sample.yaml
+
+
+Deployment example
+example.yaml
+
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: gitea-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+      - name: gitea-container
+        image: gitea/gitea:1.4
+
+
+apply the above as follows
+kubectl apply -f example.yaml
+
+we are really defining two different objects here: the deployment itself (lines 1–9), and the template of the pod it is managing (lines 10–17).
+
+Line 6 is the most important part of our deployment. It defines the number of copies of the pods we want running. In this example, we are only requesting one copy, because Gitea wasn’t designed with multiple pods in mind.
+
+There is one other new concept introduced here: labels and selectors. Labels are simply user-defined key-value stores associated with Kubernetes resources. Selectors are used retrieve the resources that match a given label query. In this example, line 13 assigns the label “app=gitea” to all pods created by this deployment. Now, if the deployment ever needs to retrieve the list of all pods that it created (to make sure they are all healthy, for example) it will use the selector defined on lines 8–9. In this way, the deployment can always keep track of which pods it manages by searching for which ones have been assigned the “app=gitea” label.
+
+you can get the deployments as follows:
+kubectl get deployments
+
+you can get the pods list using the earlier command
+kubectl get pods
+
+you can get node information as follows
+kubectl get nodes
+
+you can get config contexts as follows
+kubectl config get-contexts
+
+sample output
+CURRENT   NAME                 CLUSTER          AUTHINFO         NAMESPACE
+*         docker-desktop       docker-desktop   docker-desktop   
+          docker-for-desktop   docker-desktop   docker-desktop 
+
+you can switch context as follows
+kubectl config use-context docker-for-desktop
+
+
+sample output
+NAME             STATUS   ROLES    AGE     VERSION
+docker-desktop   Ready    master   8m31s   v1.14.6
+
+
+kubectl describe pod <podname>
+for eg: kubectl describe pod db
+
+
+output
+Name:               db
+Namespace:          default
+Priority:           0
+PriorityClassName:  <none>
+Node:               docker-desktop/192.168.65.3
+Start Time:         Wed, 16 Oct 2019 18:13:07 +0530
+Labels:             app=todoapp
+                    name=mongo
+Annotations:        <none>
+Status:             Running
+IP:                 10.1.0.13
+Containers:
+  mongo:
+    Container ID:   docker://5fb1c0a171d51b008e6a624ed99960131d6de00ce866c799b02408b331f22428
+    Image:          mongo
+    Image ID:       docker-pullable://mongo@sha256:7d9fe4ae781849afc70a29a0e1e4a37a2236c93a75786c576f34258e5983efbe
+    Port:           27017/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Wed, 16 Oct 2019 18:13:37 +0530
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /data/db from mongo-storage (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-db624 (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  mongo-storage:
+    Type:          HostPath (bare host directory volume)
+    Path:          /data/db
+    HostPathType:  
+  default-token-db624:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-db624
+    Optional:    false
+QoS Class:       BestEffort
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age    From                     Message
+  ----    ------     ----   ----                     -------
+  Normal  Scheduled  7m52s  default-scheduler        Successfully assigned default/db to docker-desktop
+  Normal  Pulling    7m51s  kubelet, docker-desktop  Pulling image "mongo"
+  Normal  Pulled     7m23s  kubelet, docker-desktop  Successfully pulled image "mongo"
+  Normal  Created    7m23s  kubelet, docker-desktop  Created container mongo
+  Normal  Started    7m22s  kubelet, docker-desktop  Started container mongo
+
+
+
+tail logs continuously
+kubectl logs -f spring-pod --tail 200
+
+Create and Delete Object configuration
+kubectl create -f spring-app.yaml
+kubectl delete -f spring-app.yaml
+
+Lables are used for identification and service discovery
+Adding, updating and deleting labels
+add
+kubectl label pod spring-pod appType=api
+
+update
+kubectl label pod spring-labels dept=customer_service --overwrite
+
+delete
+kubectl label pod spring-pod appType-
+
+List Objects based on label selectors
+kubectl get pods -l dept
+or
+kubectl get pods -l appType=api
+
+
+(for the above commands refer to the source)
+https://medium.com/@chkrishna/kubernetes-objects-e0a8b93b5cdc
+
+
+continuously watches the pod status (ctrl + c to exit from the watch mode)
+kubectl get pods --watch
+
+Multiple object configuration delete in one go
+kubectl delete -f web-rs.yaml -f web-service.yaml -f db-pod.yaml -f db-service.yaml 
+
+stats
+supports 5000 worker nodes per cluster
+
+
+Kinds of Kubernetes Objects
+---------------------------
+Pod
+Namespace
+Service
+ReplicaSet
+ReplicationController (Manages Pods)
+DeploymentController (Manages Pods)
+StatefulSet
+DaemonSet
+ConfigMap
+Volume
+Deployment
+Job
+Secret
+
+Port types
+----------
+ClusterIP (confined within the cluster)
+For example: you wouldn't want your database to be exposed to the external world, so you would use ClusterIP as type of the Port
+
+NodePort
+For example: To export your service to the world, you would specify NodePort as type of your port
+
+
+
+TargetPort
+
+
+HostPort
+This could mean different things depending on where the cluster is setup
+GCloud / OnPremise: It would refer to the worker node
+Minikube: Kubernetes Master ip
+
+Port Forward
+This would forward any request on port 10000 to port 8080 (for example)
+
+command
+kubectl port-forward spring-pod 10000:8080
+
+output
+Forwarding from 127.0.0.1:10000 -> 8080
+Forwarding from [::1]:10000 -> 8080
+
+Services
+--------
+- enables communication within and outside of application
+- connect applications with other applications / users
+	- in other words, enables connectivity between group of pods
+- enables loose coupling between services
+
+Service types
+- Node-port is one of the service types 
+	- where a service makes an internal port accessible on node port
+	- it listens on a node port and forward requests to a designated pod
+		- in other words it maps a port on the node to a port on the pod
+
+	- actually there are 3 ports involved here:
+		- pod port: 80 (also called Target Port)
+		- service port: 80 (often simply referred as port)
+		- node port: 30008 (also called as Node Port)
+	- Node port range: 30000 - 32767
+
+
+- Cluster-IP
+	- It creates a virtual ip inside the cluster to enable communication
+		- using this ip other services can communicate
+
+- Load-Balancer
+	- distributes load
+
+
+service-definition.yml
+
+apiVersion: v1
+kind: Service
+metadata:
+   - name: myapp-service
+spec:
+   type: NodePort
+   ports:
+      - targetPort: 80
+        port: 80
+        nodePort: 30008
+   selector:
+      app: xyz
+      type: front-end
+
+- targetPort is optional, if not specified, uses the same defined in port
+- port is the only mandatory setting
+- nodeport is also optional, if not specified, uses one of the available port in the nodeport range
+- app and type is picked from pod's label defined in the pod definition file
+
+create the service by
+kubectl create -f service-definition.yml
+
+kubectl get services
+
+- Notes
+	- No additional configuration is required if the app is deployed on multiple containers or multiple pods within the same node - kubernetes automatically forwards the request to one of the pods (using the random algorithm)
+	- Also, no additional configuration is required if the app is deployed on pods on multiple nodes. Kubernetes automatically creates a service that span across various nodes and maps the same port on multiple nodes. So you can specify any of the node running the application using the same port specified
+	- To summarize, whether single pod on one node, multiple pods on multiple pods on single node or multiple pods on multiple nodes, the service is create in the same mananer. When pods are deleted and added, services are automatically updated.
+
+
+Load Balancer spec
+------------------
+apiVersion: v1
+kind: Service
+metadata:
+   - name: myapp-service
+spec:
+   type: LoadBalancer
+   ports:
+      - targetPort: 80
+        port: 80
+        nodePort: 30008
+   selector:
+      app: xyz
+      type: front-end
+
+
+
+kubectl delete service my-service 
+(will not only delete the service but also the pods)
+
+
+
+Storage Volumes in Kubernetes
+------------------------------
+
+Data persistence throughout and beyond POD life
+Sharing container data within and among pods
+
+Volumes
+To support the stateful apps, K8s introduced the concept of volumes
+
+Once you attach a volume to the POD, K8S containers running in the POD can access it
+
+You can think of a volume as a Unix Volume that are mounted or like a directory - The medium that backs the directory or the contents of the directory are determined by a particular volume type.
+
+
+
+K8s Volumes vs Docker Volumes
+- Associated with lifecycle of POD in K8S (containers within POD can access it)
+- Associated with lifecycle of Container in Docker i.e. data cannot survive restart of container
+
+- K8S supports different types of volumes
+- Docker now supports of Volume Drivers but the functionality is very limited now
+
+Volume Categories
+
+	- Ephemeral (Same lifecycle as PODs)
+
+	- Durable (beyond PODs lifetime)
+
+
+Volume types
+
+	- Cloud based volumes
+		- awsElasticBlockStore
+		- azureDisk
+		- azureFile
+
+	- Host based volumes
+		- emptyDir
+		- hostPath
+
+	- Network based volumes
+		- nfs
+		- iscsi
+
+Host based volumes 
+------------------
+emptyDir
+- creates an empty directory when a POD is assigned to a Node
+- Stays as long as the POD is running
+- Once POD is removed from Node, data is deleted forever
+
+use case for emptyDir
+- Temporary space (to share data among multiple containers in POD)
+
+hostPath
+- mounts a file or directory from the host node's filesystem into your POD
+- remains even after the POD is terminated
+- similar to docker volume 
+	- docker also exposes host file system's directory as an internal directory of container
+
+warnings for the usage of hostpath
+- if the hostpath is referring to a filesystem directory, then things would work fine
+  as long as POD is scheduled on the same node, however in a multi-node cluster
+  hostpath referring different filesystem's directory may pose issues. The alternate solution is to use NFS (network mount) as hostPath which in most cases should work fine.
+
+Cloud based volumes
+-------------------
+gcePersistentDisk 
+- mounts Google Compute Engine Persistent Disk into POD
+
+- Data is preserved beyond the life of POD, it is merely unmounted when POD is terminated
+
+- multiple pods can use the same persistent disk in Read-Only mode
+
+- Only one pod can open the persistent disk in read-write mode
+
+restrictions
+- you must pre-create Persistent disk using gcloud or GCE APIs or UIs before you start using it
+- the nodes on which PODs are running must be GCE VMs
+- the nodes must be in the same GCE Project and zone as the Persistent Disk
+
+(both AWS and Azure have the same restrictions)
+
+use cases
+- multiple pods/containers can read the dataset prepopulated
+
+
+Persistent Volumes
+-------------------
+Why
+Organisation offer different storage solutions such as
+Block
+NAS
+Object Storage
+Google Cloud Disks
+AWS Disks
+Azure Disks
+
+Each of them has different architecture and API
+
+If you have to attach and manage these diverse storage types manually, you would have
+to develop custom plug-ins to interact with external drives api
+
+a) Mounting the disk
+b) Requesting the capacity
+c) Managing disk lifecycle
+
+We would need one storage interface for managing all durable storage options. K8S solution for this is Persistent Volumes and it simplifies the storage management for you.
+
+What
+
+PV Subsystem provides a standard api for developers and administrators
+
+- It abstracts details of how storage is provided from how it is consumed so that
+	- dev and admin can focus on capacity and storage types 
+	- and not focus on each and every storage provider's api
+
+- It provides two APIs
+	- Persistent Volume (PV)
+		(Piece of Storage in Cluster)
+		- It is a pre-provisioned storage inside the cluster
+		- persists beyond the lifetime of POD
+
+
+	- Persistent Volume Claim (PVC)
+		(Request for storage)
+		- It is a storage request by a user 
+		- Developer requests some capacity along with access modes (RW, RO)
+
+		- K8S follows the typical storage workflow in enterprises i.e.
+			- Storage admin stores a chunk of storage in LUNs 
+				(Logical Unit Number)
+
+			- Developer requests some capacity in Luns to be mounted on OS
+
+			- Storage team honours the request
+
+			- Application team then stores data in the LUNs
+
+
+
+		
+
+
+PV Lifecycle
+Provisioning -> Binding -> Using -> Reclaiming
+
+	- Provisioning
+		- In this stage, administrator creates the storage chunks/volumes such as
+			- Blocks, NFS, Distributed
+		- In K8S terminology, these storage volumes are called PV
+	
+	- Binding
+		- In this stage, we bind the storage requests (PVC) to pre-created PV
+		  (In other words, K8S binds user request to available storage in pool)
+		- As soon as the PVC is received, it control loops to K8S Master to
+			- check the matching PVs (requested storage vs available storage)
+				case 1: RS=100GB AS=80 -> PVC will wait until match found
+				case 2: RS=10GB AS=12 -> PVC will be fulfilled
+Note: If the available storage is slightly in excess of requested, the request will be fulfilled, otherwise it will have to wait until a match is found.
+
+	- Using
+		- In this stage, developer uses this claim inside the POD as volume
+		  (He then mounts the volumes at mount points and starts using it)
+
+	- Reclaiming
+		- When the user is done, they can delete the persistent volume claim
+		- This allows the reclaiming of the resources
+		- Volumes can be reclaimed, recycled or deleted
+
+In other words, the flow goes like this
+When POD config is submitted to K8S Master via API, API inspects whether the PVC is bounded to PV, if it is, then K8S creates the POD and the application team can start using the volume.
+	
+
+Types of provisioning PV
+- Static PV
+	- PV needs to be created before PVC
+- Dynamic PV
+	- PV is created at same time of PVC
+	- Instead of creating PVs manually, storage classes are created
+	- These storage classes are created based on the storage medium at the backend
+		- It is also called the Registration of Storage class (see picture)
+		- Storage classes can be based on speed / type of storage
+		- For example
+			- Fast (refererring to SSD)
+			- Slow (referring to HDD)
+			- Distributed (referring to GlusterFS / NFS / ObjectStorage)
+	- These storage classes are created, configured and maintained by Administrators
+	- Administrators have to configure default storage classes
+	- If the storage class is not specified in pvcconfig, default storage class is assigned
+	- Developer doesn't have worry about requested storage size is available or not in the pool
+	- All developer need to ensure is that the appropriate storage class is available
+	- Developer then raises a PVC, which in turn creates the respective PV and gets bounded
+	- Once the PV is bounded to PVC, developers can then use it by referencing the claim in pod
+
+Workflow in Dynamic Provisioning
+--------------------------------
+	Create Storage Class -> Persistent Volume Claim -> Reference the PVC in Pod -> Test the usage
+
+
+Step 1: Create Storage class
+
+Sample Storageclass kind definition in YAML
+
+sc.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+   name: fast
+provisioner: kubernetes.io/gce-pd / kubernetes.io/aws-ebs
+parameters:
+   type: pd-ssd / pd-standard
+
+
+kubectl create -f sc.yaml
+
+kubectl get storageclass
+
+sample output
+NAME                 PROVISIONER          AGE
+hostpath (default)   docker.io/hostpath   21h
+fast		     kubernetes.io/gce-pd	  3h
+
+NAME                 PROVISIONER          	AGE
+fast		     kubernetes.io/gce-pd	 3h
+standard	     kubernetes.io/gce-pd	20h
+
+
+kubectl describe storageclass hostpath
+
+sample output
+Name:                  hostpath
+IsDefaultClass:        Yes
+Annotations:           storageclass.kubernetes.io/is-default-class=true
+Provisioner:           docker.io/hostpath
+Parameters:            <none>
+AllowVolumeExpansion:  <unset>
+MountOptions:          <none>
+ReclaimPolicy:         Delete
+VolumeBindingMode:     Immediate
+Events:                <none>
+
+
+Step 2: Create persistent volume claim (PVC)
+
+sample pvc config file
+
+pvc-sample.yaml
+
+apiVersion: v1
+kind: Persistent Volume Claim
+metadata:
+   name: my-disk-claim-1
+spec:
+   resources:
+      requests:
+         storage: 30Gi
+   accessModes: 
+      - ReadWriteOnce
+   storageClassName: fast
+
+
+kubectl create -f pvc-sample.yaml
+
+kubectl get pvc
+
+
+Step 3: Referencing claim in Pod
+
+mypod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  containers:
+  - name: nginx-pod-container
+    image: nginx
+    volumeMounts: 
+    - mountPath: /test-pd
+      name: test-volume
+  volumes:
+  - name: test-volume
+    persistentVolumeClaim:
+      claimName: my-disk-claim-1
+
+
+kubectl create -f mypod.yaml
+
+kubectl get pod -o wide
+
+
+Step 4: Test the above
+
+Testing steps:
+
+1) Create a sample test file inside the mount
+	kubectl exec pv-pod -it -- /bin/sh
+	- it stands for interactive terminal - this is usually followed by the desired shell
+	- in the prompt try the following command
+		df -h /usr/share/nginx/html
+
+		sample output
+		Filesystem   Size      Used Available Capacity iused    Mounted on
+		/dev/disk1s1  30Gi 	41M 28G    		1% 	/test-pd
+
+
+		cd /test-pd
+		echo 'From 1st Pod' > test1.txt
+		exit
+	
+2) Delete the pod
+	kubectl delete -f ...
+3) Recreate the pod with same configuration
+	kubectl create -f ...
+4) Test whether the file created in step 1 is still available
+	kubectl exec pv-pod df /test-pd
+
+		sample output
+		Filesystem   Size      Used Available Capacity iused    Mounted on
+		/dev/disk1s1  30Gi 	41M 28G    		1% 	/test-pd
+
+
+	kubectl exec pv-pod ls /test-pd/
+	
+	sample output
+
+	lost+found
+	test1.txt
+
+
+Step 5: Clean up
+
+1) delete the pod
+	kubectl delete -f ...
+2) delete the pvc
+	kubectl delete -f ...
+3) delete the storage class
+	kubectl delete storageclass fast
+
+ConfigMaps - How configurations are managed in containerised apps
+-----------------------------------------------------------------
+
+Configuring containerized application
+- container images are build to be 'portable' i.e.
+	- separate container image from custom configuration
+- containers expect configuration from
+	- configuration files
+	- command line arguments
+	- environment variables
+
+ConfigMaps
+- It is K8S object that decouples configuration from Pods and Components
+- stores configuration data as key value pairs
+- It is similar to secrets, but doesn't contain sensitive information
+- Must pre-create the configMaps before referencing them in Pod Spec
+	- POD won't start if it references invalid configMaps
+	- POD won't start if it references invalid key mentioned in configMaps
+
+Creating ConfigMaps from
+- Files
+- Directories
+- Literal Values
+
+kubectl create configmap <map-name> <data-source>
+
+	- data source can be directory / file / literal value
+		- path to dir/file: --from-file
+		- key-value pair: --from-literal
+
+- format can be ini, json, xml, custom format
+
+- assuming configuration is available in a directory 
+	configure-pod-container/configmap/kubectl/
+
+- we can create a configmap as follows
+kubectl create configmap some-config --from-file=configure-pod-container/configmap/kubectl
+
+kubectl get configmaps -o wide
+
+kubectl get configmaps some-config -o yaml
+
+
+kubectl exec redis cat /redis-master/redis-conf
+
+kubectl exec -it redis redis-cli
+
+>CONFIG GET maxmemory
+1) "maxmemory"
+2) "2097152"
+
+
+- we can create a configmap using literal values such as this:
+kubectl create configmap special-config --from-literal=special.how=very
+
+
+(see the png file in the current directory for creating a pod out of this configMap)
+
+ConfigMap can be defined either as a volume or as a env variable
+
+
+Secret - Managing sensitive data in K8s
+---------------------------------------
+
+Secret is a K8S object to handle small amount of sensitive data - such as
+- passwords
+- tokens
+- ssh keys
+
+- This is K8S solution for managing and handling secrets inside POD manifest file
+- to reduce the risk of accidental exposure of confidential/sensitive information
+
+where do we create these secrets
+- secrets are created outside the pods and should be pre-created before PODs can use that in pod manifest file
+- once secret(s) is/are created, it can be deployed in any pod and any number of times
+- secrets are stored inside etcd database (key-value store) on K8S Master
+- secret size should not be more than 1 MB
+- k8s sends secretes only to target nodes where PODs are running and demands secret
+  (unlike ansible, puppet, salt it does not propagate / broadcast secrets to all nodes)
+- stored in temp fs
+
+typically when you deploy pods in k8s cluster, it pulls container images from public/private registries and runs inside a pod. custom config needs to be configured in the pod config
+
+
+Creating Secrets
+- you can create secrets by using kubectl command or by manually defining in pod manifest
+- kubectl command
+	kubectl create secret [type] [name] [data]
+
+	secret types
+		generic (file / directory / literal value)
+		docker registry
+		tls
+
+	data
+		path to dir/file: --from-file
+		key value pair: --from-literal
+
+
+	echo 'admin' > ./username.txt
+	echo 'fjisie3$.5' > ./password.txt
+	kubectl create secret generic db-user-pass --from-file=./username.txt --from-file=./password.txt
+
+	'display all secrets defined'
+	kubectl get secrets
+
+	'describe specific secret
+	kubectl describe secrets db-user-pass
+
+- manually add in pod manifest file
+	echo 'admin' | base64  'output: YWRtaW4K'
+	echo 'fjisie3$.5' | base64 'output: Zmppc2llMyQuNQo='
+
+Decoding Secrets
+	echo 'YWRtaW4K'| base64 --decode
+	echo 'Zmppc2llMyQuNQo=' | base64 --decode
+
+Consuming Secrets as Volumes and Environment Variables
+- secrets can be mounted as volumes or can be defined as env variable in pod manifest file
+
+example sample pod spec file mysecret.yaml demonstrating secret defined as a volume
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+type: Opaque
+data:
+  username: YWRtaW4K
+  password: Zmppc2llMyQuNQo=
+
+'execute the spec
+kubectl create -f mysecret.yaml
+
+
+sample pod spec file mysecret-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers: 
+  - name: mycontainer
+    image: redis
+    volumeMounts:
+    - name: foo
+      mountPath: /etc/foo
+      readOnly: true
+      mountPath: /etc/foo
+  volumes: 
+  - name: foo
+    secret:
+    - secretName: mysecret
+
+'create the redis pods
+kubectl create -f mysecret-pod.yaml
+
+'see redis pods are running
+kubectl get pods
+
+'see the volume contents
+kubectl exec mypod ls /etc/foo
+
+output of the last command
+username
+password
+
+'shows password and username in unencrypted format
+kubectl exec mypod cat /etc/foo/password
+fjisie3$.5
+
+kubectl exec mypod cat /etc/foo/username
+admin
+
+
+example sample pod spec file mysecret-pod.yaml demonstrating secret defined as env var
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers: 
+  - name: mycontainer
+    image: redis
+    env:
+    - name: SECRET_USERNAME
+      valueFrom: 
+        secretKeyRef:
+          name: mysecret
+          key: username
+
+    - name: SECRET_PASSWORD
+      valueFrom: 
+        secretKeyRef:
+          name: mysecret
+          key: password
+
+    restartPolicy: Never
+
+'create the redis pods
+kubectl create -f mysecret-pod.yaml
+
+'see redis pods are running
+kubectl get pods
+
+'see the env variable output in unencrypted form
+kubectl exec mypod env | grep SECRET
+
+output of the last command
+SECRET_USERNAME=admin
+SECRET_PASSWORD=fjisie3$.5
+
+
+
+To Explore
+
+LoadBalancing
+Secrets
+Persistent Volumes
+Storage Volumes
+GCE Persistent Disk Volume
+emptydir Volume
+HostPath Volume
+NodePort
+ClusterIP
+Static Volume provisioning
+Dynamic Volume provisioning
+
+Imperative Commands
+-------------------
+Run an instance of the nginx container by creating a Deployment object:
+kubectl run nginx --image nginx
+or
+kubectl create deployment nginx --image nginx
+
+Imperative Object Configuration (i.e. from file)
+------------------------------------------------
+Create the objects defined in a configuration file:
+kubectl create -f nginx.yaml
+Delete the objects defined in two configuration files:
+kubectl delete -f nginx.yaml -f redis.yaml
+Update the objects defined in a configuration file by overwriting the live configuration:
+kubectl replace -f nginx.yaml
+
+
+Declarative object configuration
+--------------------------------
+kubectl diff -f configs/
+kubectl apply -f configs/
+
+Recursively process directories:
+kubectl diff -R -f configs/
+kubectl apply -R -f configs/
+
+
+Advantages and Disadvantages one over the other
+-----------------------------------------------
+
+a. Imperative over Declarative Object Configuration
+Advantages
+- Imperative object configuration behavior is simpler and easier to understand.
+- As of Kubernetes version 1.5, imperative object configuration is more mature.
+Disadvantages
+- Imperative object configuration works best on files, not directories.
+- Updates to live objects must be reflected in configuration files, or they will be lost during the next replacement (?)
+
+b. Declarative over Imperative Object Configuration
+Advantages
+- Changes made directly to live objects are retained, even if they are not merged back into the configuration files (?)
+- Declarative object configuration has better support for operating on directories and automatically detecting operation types (create, patch, delete) per-object.
+Disadvantages
+- Declarative object configuration is harder to debug and understand results when they are unexpected.
+- Partial updates using diffs create complex merge and patch operations.
+
+
+
+
+Topics to explore
+=================
+Deployments
+Replication Controller
+ReplicaSet
+LoadBalancing
+Config Map
+Secrets
+Jobs
+DaemonSet
+Persistent Volumes
+Storage Volumes
+GCE Persistent Disk Volume
+emptydir Volume
+HostPath Volume
+Stateful sets
+Services
+NodePort
+ClusterIP Service
+Static Volume provisioning
+Dynamic Volume provisioning
+
+
+Webinar Series - 5 parts
+
+01 - Getting Started with Containers (covers Docker Basics)
+https://www.digitalocean.com/community/tutorials/webinar-series-getting-started-with-containers
+
+02 - Building Containerised Applications (covers deploying multi-container app in docker)
+https://www.digitalocean.com/community/tutorials/webinar-series-building-containerized-applications
+
+03 - Getting Started with Kubernetes
+https://www.digitalocean.com/community/tutorials/webinar-series-getting-started-with-kubernetes
+
+04 - A Closer Look at Kubernetes
+https://www.digitalocean.com/community/tutorials/webinar-series-a-closer-look-at-kubernetes
+
+05 - Deploying and Scaling Microservices in Kubernetes
+https://www.digitalocean.com/community/tutorials/webinar-series-deploying-and-scaling-microservices-in-kubernetes
+
+
+
+
+Sample commands can be reference from here
+https://dzone.com/articles/microservices-on-kubernetes
+
+
+Kubernetes Dashboard
+====================
+Follow the instructions from here
+https://github.com/kubernetes/dashboard/blob/master/docs/user/access-control/creating-sample-user.md
+
+(above steps copied here after following the instructions)
+
+retrieves the dashboard spec from remote location and applies it
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta4/aio/deploy/recommended.yaml
+
+
+create a new user using Service Account mechanism of Kubernetes, grant this user admin permissions and login to Dashboard using bearer token tied to this user.
+
+go to dir kubespecs and execute the following
+
+kubectl apply -f dashboard-adminuser.yaml
+kubectl apply -f cluster-role-binding.yaml
+
+then run the following command to get the token
+kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
+
+you'll see something like this in the output (just copy the token value)
+Name:         admin-user-token-bhq2h
+Namespace:    kubernetes-dashboard
+Labels:       <none>
+Annotations:  kubernetes.io/service-account.name: admin-user
+              kubernetes.io/service-account.uid: f141a03f-edd6-11e9-a36f-025000000001
+
+Type:  kubernetes.io/service-account-token
+
+Data
+====
+ca.crt:     1025 bytes
+namespace:  20 bytes
+token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLWJocTJoIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJmMTQxYTAzZi1lZGQ2LTExZTktYTM2Zi0wMjUwMDAwMDAwMDEiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6YWRtaW4tdXNlciJ9.ErJ8MtFfakyqdog6vR5GVE1NGpnU1NgOunT9_xowHC6QRwyI86SvslFODy5CFwlQR05_cuCtc4TF20vKUkdcEUReJxKMJVCZKHPujgWxsXGnIi2sXnme4lASHI8YdpzqY8xovnVC6WaUTXhDkCyj2c51DaRz8viHy91ovTn-i4SyhRennnbAZviT-Ajt7gl0wRXmCyUj6ZyABt9Gh-wi4u0z77pggsmxaWsbfskaOKQOu6OQytMK50A21P3s7Lubm5B_j1FDIYldYr5EGcaFuvoCJMyG-0y9rwY3ixsONDNqg-hllo8joGGEBXpv0b0Roi2O6mqG8YiqoR3bPQCGoA
+
+Run the following command
+kubectl proxy
+
+
+Now access the dashboard in browser
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/.
+
+Use the token option and paste the token - you should then be able to access the dashboard
+
+-----
+
+
+Minikube is a tool that allows you to run a single-node K8s cluster locally. Minikube starts a VM and runs the necessary K8s components. 
+
+
+
+When you install Docker Desktop, Kubernetes is included in it - just need to enable it.
+Just Enable Kubernetes in the Preferences option of Docker Desktop to avoid the 
+
+
+
+Source: https://medium.com/containers-101/local-kubernetes-for-mac-minikube-vs-docker-desktop-f2789b3cad3a
+
+
+
+
+helm init --wait
+Creating /Users/chasrini/.helm 
+Creating /Users/chasrini/.helm/repository 
+Creating /Users/chasrini/.helm/repository/cache 
+Creating /Users/chasrini/.helm/repository/local 
+Creating /Users/chasrini/.helm/plugins 
+Creating /Users/chasrini/.helm/starters 
+Creating /Users/chasrini/.helm/cache/archive 
+Creating /Users/chasrini/.helm/repository/repositories.yaml 
+Adding stable repo with URL: https://kubernetes-charts.storage.googleapis.com 
+Adding local repo with URL: http://127.0.0.1:8879/charts 
+$HELM_HOME has been configured at /Users/chasrini/.helm.
+
+Tiller (the Helm server-side component) has been installed into your Kubernetes Cluster.
+
+Please note: by default, Tiller is deployed with an insecure 'allow unauthenticated users' policy.
+To prevent this, run `helm init` with the --tiller-tls-verify flag.
+For more information on securing your installation see: https://docs.helm.sh/using_helm/#securing-your-helm-installation
+
+
+
+
+
+
+No need to install kubectl separately using brew or using gcloud to see the following 
+erros
+
+Could not symlink bin/kubectl
+Target /usr/local/bin/kubectl
+already exists. You may want to remove it:
+  rm '/usr/local/bin/kubectl'
+
+To force the link and overwrite all conflicting files:
+  brew link --overwrite kubernetes-cli
+
+To list all files that would be deleted:
+  brew link --overwrite --dry-run kubernetes-cli
+
+Possible conflicting files are:
+/usr/local/bin/kubectl -> /Applications/Docker.app/Contents/Resources/bin/kubectl
+
+
+WARNING:   There are older versions of Google Cloud Platform tools on your system PATH.
+  Please remove the following to avoid accidentally invoking these old tools:
+
+  /Applications/Docker.app/Contents/Resources/bin/kubectl
+
+

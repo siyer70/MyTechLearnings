@@ -1,0 +1,237 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{hyphen\}}{\leveltext\leveltemplateid1\'01\uc0\u8259 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Security, Identity & Compliance\
+========================\
+IAM\
+	- Basics\
+		- Comprises of\
+			- Users\
+				- Users can be given \
+					- Programmatic Access (API, CLI, SDK and other dev tools)\
+					- Console Access\
+				- User can be associated with 0 or more groups\
+				- You can copy permissions from a model user\
+				- you can attach existing policies directly (and override conflicting policies)\
+			- Groups \
+				- Groups can be associated with 0 or more\
+					- AWS Managed Policies\
+					- Job Function \
+						- SystemAdministrator, NetworkAdministrator, DatabaseAdministrator, ViewOnlyAccess\
+					- Custom Managed Roles\
+				- Groups can have 0 or more users\
+\
+			- Roles \
+				- Roles are associated with policies\
+			- Policies\
+	- IAM is universal - it does not apply to regions at this time\
+	- root account is simply the account created when you first setup AWS account - it has complete admin access\
+		- you should always setup MFA for this account\
+		- you can also customise password rotation policies\
+	- new users have no permissions when first created\
+	- New users are assigned Access Key id & Secret access keys  when first created\
+		- you can use this to access AWS via the APIs and command line\
+		- you only get to see this once, if you lose them you have to regenerate them\
+Security Groups\
+	- you can specify only allow rules - you can\'92t specify deny rules\
+	- Stateful - whatever inbound rules are created - it is automatically applied to outbound as well\
+	- you can\'92t block / blacklist a particular port\
+	- you can\'92t block individual IP address\
+	- changes to security groups take effect immediately\
+	- all inbound traffic is blocked by default - you need to add rules to enable them\
+	- you can assign multiple security groups to your EC2 instance\
+		- select EC2 instance\
+		- click on Actions -> Networking -> Change Security Groups and select multiple security groups\
+		- the result is the union of two sets of multiple groups\
+	- EC2 to Security Groups relationship is Many to Many\
+			\
+Cross Account Access\
+	- Within a multi-account (or multi-role) AWS environment, you can switch roles within Management Console\
+	- You can sign in to the console using your IAM username then switch the console to manage another account\
+		- without having to enter another user name and password\
+\
+	- Steps\
+		- You need two AWS Accounts to test this\
+		- Say you have one account for production AWS account and one for developer AWS account\
+		- and you want to give S3 specific bucket access to your developers\
+		- First login in to developer AWS Account (as root)\
+			- create a group called \'93developer\'94\
+			- create a user (say shekhar)\
+		- Log in to production AWS account (as root)\
+			- In the IAM, \
+				- create a policy called \'93read-write-app-bucket-policy\'94 (see Bucket Policy section)\
+				- create a role called \'93MyDeveloperAccess\'94\
+					- select \'93Another AWS Account\'94\
+					- specify the developer AWS account id and leave rest as default\
+					- attach the newly created policy \'93read-write-app-bucket-policy\'94 to it\
+		- Log back to developer AWS account (as root)\
+			- In the developer group that you created earlier\
+				- add an inline policy called \'93allow-assume-s3-role-in-production\'94\
+					- paste the inline policy (see Inline Policy section)\
+					- replace the production account id with the actual id of the other PROD AWS account id\
+		-  Log in to developer AWS account (as shekhar)\
+			- select the \'93Switch Role\'94 menu option from your name drop down\
+				- specify the PROD AWS Account Id\
+				- specify the Role \'93MyDeveloperAccess\'94\
+				- specify the display name\
+		- You can now assume Developer access in Production Account\
+			- you can perform the operations in S3 bucket and see it works now\
+\
+\
+Bucket Policy - \'93read-write-app-bucket-policy\'94\
+\{\
+  "Version": "2012-10-17",\
+  "Statement": [\
+    \{\
+      "Effect": "Allow",\
+      "Action": "s3:ListAllMyBuckets",\
+      "Resource": "arn:aws:s3:::*"\
+    \},\
+    \{\
+      "Effect": "Allow",\
+      "Action": [\
+        "s3:ListBucket",\
+        "s3:GetBucketLocation"\
+       ],\
+      "Resource": "arn:aws:s3:::<your bucket name>\'93\
+    \},\
+    \{\
+      "Effect": "Allow",\
+      "Action": [\
+        "s3:GetObject",\
+        "s3:PutObject",\
+        "s3:DeleteObject"\
+      ],\
+      "Resource": "arn:aws:s3:::<your bucket name>/*"\
+    \}\
+  ]\
+\}\
+\
+Inline policy - \'93allow-assume-s3-role-in-production\'94\
+\
+\{\
+  "Version": "2012-10-17",\
+  "Statement": \{\
+    "Effect": "Allow",\
+    "Action": "sts:AssumeRole",\
+    "Resource": "arn:aws:iam::<PRODUCTION-ACCOUNT-ID>:role/MyDevelopersAccess"\
+  \}\
+\}\
+\
+Key Management Service\
+Cognito - Web Identity Federation Service\
+	- Web identity federation is when you tried to sign in to a web site using an identity provider credentials (for eg google)\
+	- in other words Federation allows users to authenticate with a web identity provider\
+		- Federation means\
+			- combining or joining a list of users in one domain (such as IAM) with \
+				- a list of users in another domain (such as Active Directory or Facebook)\
+	- Identity broker\
+		- A service that allows you to take an identity from point A and join it (federate it) to point B\
+	- Web Identify Federation lets you give your users access to AWS resources once\
+		- they have successfully authenticated with a web-based identity provider (Amazon, Google, Facebook)\
+		- following successful authentication, the user receives an authenticate code that\
+			- they can then trade for temporary AWS security credentials\
+				- which maps to an IAM role allowing access to the required resources\
+\
+	- Cognito is a web identity federation service - it has the following features\
+		- Sign up and sign in to your apps\
+		- Access for guest users\
+		- acts as an identity broker between your app and web identify provider, so no need to\
+			- write additional code\
+\pard\tx220\tx720\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\li720\fi-720\pardirnatural\partightenfactor0
+\ls1\ilvl0\cf0 {\listtext	\uc0\u8259 	}	- embed or store to AWS credentials locally on the device\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 			\
+		- synchronises user data for multiple devices\
+			- Cognito tracks the association between user identity and the various different devices they sign-in from\
+			- In order to seamless user experience for your application, \
+				- Cognito uses push synchronisation to push updates and \
+					- synchronises user data across multiple devices\
+					- Cognito uses SNS notification to all the devices associated with a given user identity\
+						- whenever data stored in the cloud changes\
+		- Recommended for all mobile applications AWS services\
+\
+	- Cognito User Pools\
+		- User Pools are user directories used to manage sign-up and sign-in functionality for mobile and web apps\
+		- User can directly sign-in to the user pool \
+			- username and password in Cognito\
+		or \
+		- User can sign-in using Facebook/Amazon/Google\
+		- Cognito acts as an identity broker between identify provider and AWS\
+		- Successful authentication generates JSON Web Token (JWTs)\
+		- covers User registration, authentication and account recovery etc\
+\
+	- Cognito Identity Pools\
+		- Identity pools enable provide temporary AWS credentials to access AWS services like S3 or DynamoDB\
+		- It is the one which actually authorises your access to your AWS resources\
+\
+	- Example scenario - user needs to access a website that allows Facebook credentials and uses cognate service\
+		- Flow would work like this\
+			- User accesses the website url - since user has not yet authenticated herself\
+			- she is routed to login screen with Facebook as one of the option\
+			- User chooses Facebook option and she is redirected to Facebook login page\
+			- user enters the username and password and Facebook authenticates the user\
+			- after successful authentication, Facebook generates and responds with an authentication code\
+			- the authentication code is then received by cognito user pool and it generates a JWT for the user\
+			- this JWT is then redirected to Cognito Identity pool on behalf of user \
+			- Cognito identity pool then returns back AWS credentials in the form of an IAM role\
+			- user is then able to access the AWS resources that the IAM role supports\
+\
+Security Token Service\
+	- Example scenario\
+		- User needs to access a reporting application that enables access to user\'92s S3 bucket\
+		- User needs to be authenticated using organisation\'92s active directory\
+	- Flow works like this\
+		- Step 1: User logs into reporting application with username and password\
+		- Step 2: Identity Broker (for ex: Cognito) receives the username and password \
+				and validates with Active Directory using LDAP protocol\
+		- Step 3: User is authenticated by Active Directory \
+		- Step 4: Identity Broker contacts Security Token Service\
+			- Identity broker calls the new GetFederationToken function using IAM credentials.\
+			- The call must include an IAM policy and a duration (1 to 36 hours) \
+			- Policy must specify the permissions to be granted to the temporary security credentials\
+		- Step 5: STS responds as per below\
+			- STS confirms that the policy of the IAM user making the call to GetFederationToken\
+			- Gives permission to create new tokens \
+			- It returns four values to the application\
+				- Access Key ID\
+				- Access Secret Key\
+				- Token\
+				- Duration (Token\'92s lifetime)\
+		- Step 6: Cognito forwards the response to Application\
+		- Step 7: Application hits S3 with those STS response and requested action\
+		- Step 8: S3 contacts IAM to verify the token and whether the requested operation is permitted\
+		- Step 9: IAM confirms whether the token is valid and the requested operation is permitted and S3 responds\
+		\
+Macie\
+	- Powerful security and compliance enabling service \
+		- under the Security, Identity and Compliance category in AWS  Management Console\
+	- Main function of Macie is to automatically detect, identify, classify and protect security data\
+	- Uses Machine Learning / AI for the above\
+	- Detection and Classification\
+		- Automatically and continuously monitors the new data stored in S3 \
+		- it learns from / analyses\
+			- the data access patterns\
+			- user behaviour\
+			- cloud trail event data\
+		- and it alerts from unusual and irregular activity \
+			- It can automatically assign business values to data in the form of a risk score\
+				- allowing priorities of alerts to be established\
+		- It uses NLP methods to classify and interpret different data types and content\
+	- Protection of Data\
+		- Monitor and Discover security changes governing your data\
+		- identify security centric changes - such as access keys held in s3 bucket\
+			- identify critical, sensitive and security focused data - API keys, secret access keys, PII / PHI data\
+			- detect changes and alterations to security policies and access control lists\
+			- Maintain compliance requirements for various regulations\
+Secret Manager\
+Certificate Manager\
+Directory Service\
+WAF & Shield\
+}

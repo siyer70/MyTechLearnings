@@ -1,0 +1,119 @@
+Jenkins Details
+
+Pipeline Utility Steps plug-in to be added in corporate Jenkins
+https://jenkins.io/doc/pipeline/steps/pipeline-utility-steps/
+
+Approval for script execution is also required
+Maven and Java path to be set
+Global tool configuration name to be used in tools section
+
+Jenkins Home:
+/Users/Shared/Jenkins/Home/
+
+Commands to change the Jenkins default port and to stop & start
+sudo defaults write /Library/Preferences/org.jenkins-ci.plist httpPort <port>
+(7070 setup currently)
+
+sudo launchctl unload /Library/LaunchDaemons/org.jenkins-ci.plist
+
+sudo launchctl load /Library/LaunchDaemons/org.jenkins-ci.plist
+
+(Also refer to this page)
+https://stackoverflow.com/questions/7139338/change-jenkins-port-on-macos
+
+Getting started video on Jenkins
+https://www.youtube.com/watch?v=RNeYmD9mJpU
+
+Repository url
+
+file:////Users/chasrini/eclipse-workspace/infoserver
+
+https://github.com/<git userid>/Infoserver.git
+
+Refer setting up a maven project in Jenkins in this url
+https://medium.com/@anusha.sharma3010/build-a-simple-maven-project-in-jenkins-da7a2a4ae202
+
+52,479.72
+
+https://stackoverflow.com/questions/50186447/how-to-deploy-spring-boot-jar-file-to-ec2-using-jenkins
+
+
+Path update
+env.PATH = "${mvnHome}/bin:${env.PATH}"
+
+
+Setting path in MAC
+https://www.architectryan.com/2012/10/02/add-to-the-path-on-mac-os-x-mountain-lion/
+
+
+Jenkins references for pipeline scripting
+https://www.blazemeter.com/blog/how-to-use-the-jenkins-declarative-pipeline/?utm_source=blog&utm_medium=BM_blog&utm_campaign=how-to-use-the-jenkins-scripted-pipeline
+
+https://jenkins.io/doc/book/pipeline/jenkinsfile/
+https://jenkins.io/doc/pipeline/tour/hello-world/
+https://jenkins.io/blog/2017/02/07/declarative-maven-project/
+https://jenkins.io/doc/pipeline/tour/running-multiple-steps/
+https://www.baeldung.com/jenkins-pipelines
+
+
+https://www.blazemeter.com/blog/how-to-use-the-jenkins-scripted-pipeline/
+
+Archive artefacts example
+https://medium.com/@gustavo.guss/jenkins-archive-artifact-save-file-in-pipeline-ac6d8b569c2c
+
+
+Nodejs plugin (not required)
+https://wiki.jenkins.io/display/JENKINS/NodeJS+Plugin
+
+Jenkins pipeline for nodejs project
+https://jenkins.io/doc/tutorials/build-a-node-js-and-react-app-with-npm/
+https://medium.com/@mosheezderman/how-to-set-up-ci-cd-pipeline-for-a-node-js-app-with-jenkins-c51581cc783c
+
+
+Parallel steps
+https://www.baeldung.com/jenkins-pipelines
+
+Test stage
+Jenkinsfile (Declarative Pipeline)
+pipeline {
+    agent any
+
+    stages {
+        stage('Test') {
+            steps {
+                /* `make check` returns non-zero on test failures,
+                * using `true` to allow the Pipeline to continue nonetheless
+                */
+                sh 'make check || true' 
+                junit '**/target/*.xml' 
+            }
+        }
+    }
+}
+
+Timeout
+Jenkinsfile (Declarative Pipeline)
+pipeline {
+    agent any
+    stages {
+        stage('Deploy') {
+            steps {
+                timeout(time: 3, unit: 'MINUTES') {
+                    retry(5) {
+                        sh './flakey-deploy.sh'
+                    }
+                }
+            }
+        }
+    }
+}
+
+tar -czvf name-of-archive.tar.gz /path/of/build/directory
+
+
+How to add parameters in Jenkins Pipeline
+https://www.youtube.com/watch?v=5_tvlaIeQUQ
+
+How to use parameters in when conditions during stages
+https://stackoverflow.com/questions/50381586/jenkins-pipeline-conditional-stage-using-when-for-choice-parameters
+

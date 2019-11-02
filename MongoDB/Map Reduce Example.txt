@@ -1,0 +1,63 @@
+Map Reduce Example
+
+During the operation, map-reduce takes the following locks:
+
+The read phase takes a read lock. It yields every 100 documents.
+The insert into the temporary collection takes a write lock for a single write.
+If the output collection does not exist, the creation of the output collection takes a write lock.
+If the output collection exists, then the output actions (i.e. merge, replace, reduce) take a write lock. This write lock is global, and blocks all operations on the mongod instance.
+
+db.customers.insert([
+{
+_id: ObjectId("50a8240b927d5d8b5891743c"),
+cust_id: "abc",
+ord_date: new Date("Oct 04, 2012"),
+status: 'A',
+price: 25,
+items: [ { sku: "mmm", qty: 5, price: 2.5 },
+{ sku: "nnn", qty: 5, price: 2.5 } ]
+},
+
+{
+_id: ObjectId("50a8240b927d5d8b5891743d"),
+cust_id: "abc",
+ord_date: new Date("Oct 04, 2012"),
+status: 'A',
+price: 50,
+items: [ { sku: "mmm", qty: 5, price: 5 },
+{ sku: "nnn", qty: 5, price: 5 } ]
+},
+
+{
+_id: ObjectId("50a8240b927d5d8b5891743e"),
+cust_id: "def",
+ord_date: new Date("Oct 04, 2012"),
+status: 'A',
+price: 50,
+items: [ { sku: "mmm", qty: 5, price: 5 },
+{ sku: "nnn", qty: 5, price: 5 } ]
+},
+
+{
+_id: ObjectId("50a8240b927d5d8b5891743f"),
+cust_id: "def",
+ord_date: new Date("Oct 04, 2012"),
+status: 'A',
+price: 50,
+items: [ { sku: "mmm", qty: 5, price: 5 },
+{ sku: "nnn", qty: 5, price: 5 } ]
+}])
+
+var mapFunction1 = function() {
+emit(this.cust_id, this.price);
+};
+
+var reduceFunction1 = function(keyCustId, valuesPrices) {
+return Array.sum(valuesPrices);
+};
+
+db.customers.mapReduce(
+mapFunction1,
+reduceFunction1,
+{out: "map_reduce_example" }
+)

@@ -1,0 +1,12 @@
+Docker id: gmail id without @gmail.com
+Docker password: usual with !
+
+
+docker commands
+
+docker login
+docker images
+docker pull <username>/<image>:<tag>
+docker build -t <username>/<image>:<tag>
+docker push <username>/<image>:<tag>
+docker run (to complete)

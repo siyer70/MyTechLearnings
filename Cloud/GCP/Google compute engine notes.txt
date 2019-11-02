@@ -1,0 +1,33 @@
+Compute Engine
+- No upfront investment
+- Consistent performance
+- creating vm instance
+	- use gcp console - for exploration
+	- use gcloud 
+	- use terraform for automation (IaC - Infra as code - best practice)
+
+	- create vm instance directly by providing all params
+		- pick a boot image (linux / windows)
+		- specify cpus, ram / select gpus
+		- persistent disks - standard / ssd
+		- non-persistent option - local ssd (for temporary storage)
+		- define start up scripts
+
+	- create vm instance from template
+	- create vm instance from image
+
+	- preemptible instances (to save on cost)
+		- especially used for long running batch analytical jobs
+
+	- custom vms as per specific needs
+
+	- scale up or scale out with compute engine
+
+	- auto-scaling as per load
+
+
+- snapshots of the vm
+	- take disk snapshots as backups 
+	- or as migration tools (for migrating vms from one region to another)
+
+

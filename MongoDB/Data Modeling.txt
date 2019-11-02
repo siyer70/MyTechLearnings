@@ -1,0 +1,171 @@
+Data Modeling 
+
+//One to One Relationship
+{
+   _id: "1",
+   customerid: "customer_1",
+   customer_name: "Shashi",
+   height: "5 7",
+   weight: 74,   
+   address: {
+              street: "123 Fake Street",
+              city: "Faketon",
+              state: "MA",
+              zip: "12345"
+            }
+}
+********************************************************************************
+//One to Many (One to few...)
+{
+   _id: "joe",
+   name: "Joe Bookreader",
+   addresses: [
+                {
+                  street: "123 Fake Street",
+                  city: "Faketon",
+                  state: "MA",
+                  zip: "12345"
+                },
+                {
+                  street: "1 Some Other Street",
+                  city: "Boston",
+                  state: "MA",
+                  zip: "12345"
+                }
+              ]
+ }
+ 
+ ********************************************************************************
+ //One to Many with References
+ (Publisher Data)
+ {
+   title: "MongoDB: The Definitive Guide",
+   author: [ "Kristina Chodorow", "Mike Dirolf" ],
+   published_date: ISODate("2010-09-24"),
+   pages: 216,
+   language: "English",
+   publisher: {
+              name: "O'Reilly Media",
+              founded: 1980,
+              location: "CA"
+            }
+}
+
+{
+   title: "50 Tips and Tricks for MongoDB Developer",
+   author: "Kristina Chodorow",
+   published_date: ISODate("2011-05-06"),
+   pages: 68,
+   language: "English",
+   publisher: {
+              name: "O'Reilly Media",
+              founded: 1980,
+              location: "CA"
+            }
+}
+********************************************************************************
+//Publisher
+{
+   name: "O'Reilly Media",
+   founded: 1980,
+   location: "CA",
+   books: [123456789, 234567890, ...]
+}
+
+{
+    _id: 123456789,
+    title: "MongoDB: The Definitive Guide",
+    author: [ "Kristina Chodorow", "Mike Dirolf" ],
+    published_date: ISODate("2010-09-24"),
+    pages: 216,
+    language: "English"
+}
+
+{
+   _id: 234567890,
+   title: "50 Tips and Tricks for MongoDB Developer",
+   author: "Kristina Chodorow",
+   published_date: ISODate("2011-05-06"),
+   pages: 68,
+   language: "English"
+}
+********************************************************************************
+{
+   _id: "oreilly",
+   name: "O'Reilly Media",
+   founded: 1980,
+   location: "CA"
+}
+
+{
+   _id: 123456789,
+   title: "MongoDB: The Definitive Guide",
+   author: [ "Kristina Chodorow", "Mike Dirolf" ],
+   published_date: ISODate("2010-09-24"),
+   pages: 216,
+   language: "English",
+   publisher_id: "oreilly"
+}
+
+{
+   _id: 234567890,
+   title: "50 Tips and Tricks for MongoDB Developer",
+   author: "Kristina Chodorow",
+   published_date: ISODate("2011-05-06"),
+   pages: 68,
+   language: "English",
+   publisher_id: "oreilly"
+}
+********************************************************************************
+db.categories.insert( { _id: "MongoDB", parent: "Databases" } )
+db.categories.insert( { _id: "dbm", parent: "Databases" } )
+db.categories.insert( { _id: "Databases", parent: "Programming" } )
+db.categories.insert( { _id: "Languages", parent: "Programming" } )
+db.categories.insert( { _id: "Programming", parent: "Books" } )
+db.categories.insert( { _id: "Books", parent: null } )
+
+db.categories.findOne( { _id: "MongoDB" } ).parent
+db.categories.createIndex( { parent: 1 } )
+db.categories.find( { parent: "Databases" } )
+********************************************************************************
+
+db.categories.insert( { _id: "MongoDB", children: [] } )
+db.categories.insert( { _id: "dbm", children: [] } )
+db.categories.insert( { _id: "Databases", children: [ "MongoDB", "dbm" ] } )
+db.categories.insert( { _id: "Languages", children: [] } )
+db.categories.insert( { _id: "Programming", children: [ "Databases", "Languages" ] } )
+db.categories.insert( { _id: "Books", children: [ "Programming" ] } )
+
+db.categories.findOne( { _id: "Databases" } ).children
+db.categories.find( { children: "MongoDB" } )
+
+********************************************************************************
+Model Tree Structures with an Array of Ancestors
+
+db.categories.insert( { _id: "MongoDB", ancestors: [ "Books", "Programming", "Databases" ], parent: "Databases" } )
+db.categories.insert( { _id: "dbm", ancestors: [ "Books", "Programming", "Databases" ], parent: "Databases" } )
+db.categories.insert( { _id: "Databases", ancestors: [ "Books", "Programming" ], parent: "Programming" } )
+db.categories.insert( { _id: "Languages", ancestors: [ "Books", "Programming" ], parent: "Programming" } )
+db.categories.insert( { _id: "Programming", ancestors: [ "Books" ], parent: "Books" } )
+db.categories.insert( { _id: "Books", ancestors: [ ], parent: null } )
+
+db.categories.findOne( { _id: "MongoDB" } ).ancestors
+db.categories.find( { ancestors: "Programming" } )
+
+********************************************************************************
+Model Tree Structures with Materialized Paths
+
+db.categories.insert( { _id: "Books", path: null } )
+db.categories.insert( { _id: "Programming", path: ",Books," } )
+db.categories.insert( { _id: "Databases", path: ",Books,Programming," } )
+db.categories.insert( { _id: "Languages", path: ",Books,Programming," } )
+db.categories.insert( { _id: "MongoDB", path: ",Books,Programming,Databases," } )
+db.categories.insert( { _id: "dbm", path: ",Books,Programming,Databases," } )
+
+db.categories.find().sort( { path: 1 } )
+db.categories.find( { path: /,Programming,/ } )
+db.categories.find( { path: /^,Books,/ } )
+
+
+
+

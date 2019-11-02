@@ -1,0 +1,311 @@
+*********************************************MongoDB Shell*********************************************
+The mongo shell is an interactive JavaScript interface to MongoDB. 
+You can use the mongo shell to query and update data as well as perform administrative operations.
+
+How to create database & collection ?
+
+db==>Current Database
+
+db.help(); ==> (all database commands)
+
+db.adminCommand(nameOrDocument)==> switch to admin user and db.runCommand
+db.auth(username, password)==>Any production system needs to provide security.
+db.cloneDatabase(fromhost)==>to copy remote database to local mongodb. it assumes remote database is having same name
+MongoDB Enterprise > db.commandHelp("createUser")==>help for: createUser Adds a user to the system
+MongoDB Enterprise > db.commandHelp("count")==>help for: count count objects in collection
+MongoDB Enterprise > db.commandHelp("aggregate")==>help for: count count objects in collection
+
+db.copyDatabase(fromdb, todb, fromhost)
+use db1
+db.testcoll.insert({x:1});
+use db2
+db.copyDatabase("db1","db2"); (it copies from same mongod instance)
+
+db.createCollection(<name>, { capped: <boolean>,               ==>Fixed Size
+                              autoIndexId: <boolean>,          ==>Deprecated
+                              size: <number>,		           ==>Maximum size in bytes
+                              max: <number>,                   ==>Maximum number of documents in 
+                              storageEngine: <document>,       ==>Allow user to specify engine per collection basis
+                              validator: <document>,           ==>specify validation rules
+                              validationLevel: <string>,       ==>Three types of validation
+                              validationAction: <string>,      ==>Error or Warning
+                              indexOptionDefaults: <document>, ==>WiredTiger Storage Engine Only
+                              viewOn: <string>,                ==>Name of Source Collection
+                              pipeline: <pipeline>,            ==>Aggregation pipeline to filter the documents
+                              collation: <document> } )        ==>Specify language level rules
+
+Important Note(Validator)
+==>Validation occurs during updates and inserts.existing documents do not undergo validation checks until modification
+==>You cannot specify a validator for collections in the admin, local, and config databases
+==>You cannot specify a validator for system.* collections
+
+Important Note(validationLevel)
+off==>No validation for inserts or updates
+strict==>Apply validation rules to all inserts and all updates (Default Option)
+moderate==>Apply validation rules to inserts and to updates on existing valid documents. Do not apply rules to updates on existing invalid documents.
+
+Important Note(validationAction)
+Error==>Default Documents must pass validation before the write occurs.Otherwise, the write operation fails.
+Warn==>	Documents do not have to pass validation. If the document fails validation, 
+the write operation logs the validation failure.
+
+indexOptionDefaults (WiredTiger Engine only)
+(Allows users to specify a default configuration for indexes when creating a collection)
+{<storage-engine-name>:<options>}
+
+Examples for Create Collection
+
+1)db.createCollection("fixed_size_coll", { capped : true, size : 5*1024*1024, max : 5000 } )
+2)db.createCollection("preallocate_space_coll", { size: 2*1024*1024*1024 } )
+3)collection with validation
+
+db.createCollection( "contacts",
+   {
+      validator: { $or:
+         [
+            { phone: { $type: "string" } },
+            { email: { $regex: /@mongodb\.com$/ } },
+            { status: { $in: [ "Unknown", "Incomplete" ] } }
+         ]
+      }
+   }
+)
+
+db.contacts.insert({x:1});                           //validation fails
+db.contacts.insert({phone:"1234567890"}) 	     //validation pass
+db.contacts.insert({email:"nilap.shah@mongodb.com"}) //validation pass
+
+4)Create Collection with storage engine and config options
+db.createCollection(
+   "users",
+   { storageEngine: { wiredTiger: { configString: "<option>=<setting>" } } }
+)
+
+5)db.createCollection with language specific rules
+db.createCollection("myColl",{collation:{locale:"fr"}});
+
+//creating view
+for(i=1;i<1000;i++){db.testcoll.insert({x:i, y:i, z:i, a:i});}
+
+//create view using helper
+db.createView("testview", "testcoll", [{$project:{x:1,y:1}}])
+//create view using commands
+db.runCommand({ create:"nilapview", viewOn:"testview", pipeline:[{$project:{x:1,y:1}}] })
+
+//Creating view on multiple collections
+db.orders.insert([{ "_id" : 1, "item" : "abc", "price" : NumberDecimal("12.00"), "quantity" : 2 },
+{ "_id" : 2, "item" : "jkl", "price" : NumberDecimal("20.00"), "quantity" : 1 },
+{ "_id" : 3, "item" : "abc", "price" : NumberDecimal("10.95"), "quantity" : 5 },
+{ "_id" : 4, "item" : "xyz", "price" : NumberDecimal("5.95"), "quantity" : 5 },
+{ "_id" : 5, "item" : "xyz", "price" : NumberDecimal("5.95"), "quantity" : 10 }])
+
+db.inventory.insert([{ "_id" : 1, "sku" : "abc", description: "product 1", "instock" : 120 },
+{ "_id" : 2, "sku" : "def", description: "product 2", "instock" : 80 },
+{ "_id" : 3, "sku" : "ijk", description: "product 3", "instock" : 60 },
+{ "_id" : 4, "sku" : "jkl", description: "product 4", "instock" : 70 },
+{ "_id" : 5, "sku" : "xyz", description: "product 5", "instock" : 200 }])
+
+db.createView (
+   "orderDetails",
+   "orders",
+   [
+     { $lookup: { from: "inventory", localField: "item", foreignField: "sku", as: "inventory_docs" } },
+     { $project: { "inventory_docs._id": 0, "inventory_docs.sku": 0 } }
+   ]
+)
+
+db.inventory.insert([{ "_id" : 6, "sku" : "abc", description: "product 1", "instock" : 120 },
+{ "_id" : 7, "sku" : "def", description: "product 2", "instock" : 80 },
+{ "_id" : 8, "sku" : "ijk", description: "product 3", "instock" : 60 },
+{ "_id" : 9, "sku" : "jkl", description: "product 4", "instock" : 70 },
+{ "_id" : 10, "sku" : "xyz", description: "product 5", "instock" : 200 }])
+
+db.orderDetails.find().pretty();
+
+//we can perform aggregation on it as well
+db.orderDetails.aggregate([{$sortByCount: "$item"}])
+
+==>Views use the indexes of the underlying collection
+==>you cannot create, drop or re-build indexes on the view directly nor get a list of indexes on the view
+==>You cannot specify a $natural sort on a view
+==>views do not support $, $elemMatch, $slice, $meta
+==>views can not be renamed
+==>views do not support mapreduce operations
+==>cannot perform shareded view while using $lookup and $graphlookup
+
+db.createUser(later in detail while usermanagement topic)
+
+use admin
+db.createUser(
+   { 
+     user: "root",
+     pwd: "root",
+     roles: [ "root"]
+   }
+)
+
+//current operation mongodb is running
+db.currentOp( { "$all": true } )
+
+//All write operations waiting for Lock
+db.currentOp(
+   {
+     "waitingForLock" : true,
+     $or: [
+        { "op" : { "$in" : [ "insert", "update", "remove" ] } },
+        { "query.findandmodify": { $exists: true } }
+    ]
+   }
+)
+
+//all active running operations 
+db.currentOp(
+   {
+     "active" : true,
+     "numYields" : 0,
+     "waitingForLock" : false
+   }
+)
+
+//Active Operations on a Specific Database
+db.currentOp(
+   {
+     "active" : true,
+     "secs_running" : { "$gt" : 3 },
+     "ns" : /^db1\./
+   }
+)
+
+//Active Indexing Operations
+db.currentOp(
+    {
+      $or: [
+        { op: "command", "query.createIndexes": { $exists: true } },
+        { op: "none", ns: /\.system\.indexes\b/ }
+      ]
+    }
+)
+
+//Drop Database
+db.dropDatabase(); //drops current database is in use
+
+db.eval(function, arguments) //Depreacated since 3.0(abilty to run javascripts code)
+
+//Forces the mongod to flush all pending write operations to disk 
+db.fsyncLock()
+==>used to take consistant backups
+
+//Unblock the writes
+db.fsyncUnlock()
+
+//db.getCollection() == db.collectionName...
+var authColl = db.getCollection("auth")
+
+//Get all Collection/views including validator + index Information
+db.getCollectionInfos()
+
+//Just to check whether write operation is successful or not on Replicasets
+db.getLastError()/db.getLastErrorObj()
+
+//get log verbosity information
+db.getLogComponents()
+
+//get connection object
+db.getMongo()
+
+//Allow to read from secondary
+db.getMongo().setSlaveOk()
+
+db.getName()
+
+db.getPrevError()
+
+db.getProfilingLevel()
+db.getProfilingStatus()
+
+db.getReplicationInfo()
+
+db.getSiblingDB("db1")
+
+db.getWriteConcern() //write concern
+
+//Get Machine Information
+db.hostInfo()
+
+//check the primary status
+db.isMaster()
+
+//kill specific operation
+db.killOp(opid)
+
+//list all database commands
+db.listCommands()
+
+loads all scripts in the system.js collection for the current database into the mongo shell session
+db.loadServerScripts() 
+
+//Ends current session
+db.logout()
+
+//provides information for each collection
+db.printCollectionStats()
+
+//print replication info
+db.printReplicationInfo()
+
+//print shardig information
+db.printShardingStatus()
+
+//print slave node information
+db.printSlaveReplicationInfo()
+
+//repair only current database
+db.repairDatabase()
+
+//Get Server Status
+db.serverStatus()
+
+//set Log Level
+db.setLogLevel(<level>, <component>)
+
+various components names
+-->accessControl
+-->command
+-->control
+-->geo
+-->index
+-->network
+-->query
+-->replication
+-->sharding
+-->storage
+-->storage.journal
+-->write
+
+db.setLogLevel(1)
+db.setLogLevel(2, "storage.journal" )
+
+//set profiling Level
+db.setProfilingLevel(level,<slowms>)
+
+db.setProfilingLevel(0)
+db.setProfilingLevel(1,100)
+db.setProfilingLevel(2) 
+
+db.setWriteConcern({w:1,j:true,wtimeout:100})
+db.getWriteConcern()
+db.unsetWriteConcern({w:1,j:true,wtimeout:100})
+
+//shutdown mongo server gracefully
+db.shutdownServer()
+
+//get database statistics
+db.stats();
+
+//get version
+db.version()
+
+
+
+
+

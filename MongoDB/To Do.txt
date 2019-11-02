@@ -1,0 +1,29 @@
+MapReduce Example
+******************************************************************************
+GridFS
+------------------------------------------------------------------------------
+chunksize - 255kb
+can store large files upto any size
+editing is not possible
+
+cd /usr/bin
+touch testmongofile.txt
+
+[root@localhost bin]# ./mongofiles -d gridfs put testmongofile.txt
+mongofiles -d gridfs put restaurants.json
+
+mongofiles -d gridfs get restaurants.json
+[root@localhost bin]# ./mongofiles -d gridfs get testmongofile.txt
+******************************************************************************
+Profiler
+0-No Profiling
+1-Logs only slow queries
+2-Logs all queries
+
+db.setProfilingLevel(2);
+db.shiva.insert({x:1});
+db.system.profile.find({ns:"training3.shiva"}).pretty();
+******************************************************************************
+StorageEngine
+******************************************************************************
+Special Replicaset

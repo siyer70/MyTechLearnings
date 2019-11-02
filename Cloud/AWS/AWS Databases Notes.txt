@@ -1,0 +1,250 @@
+Database
+=======
+RDS (OLTP - Online Transaction Processing)
+	- Supported Relational Databases
+		- Aurora
+		- SQL Server
+		- Oracle
+		- MYSQL Server
+		- Postgres
+		- MariaDB
+	- Two key features of RDS
+		- Multi-AZ - for Disaster Recovery
+			- Exact copy of your database in another AZ
+			- AWS handles the replication for you - all writes are synchronized
+			- Uses Primary Instance and Secondary Instances concept
+			- Connection String refers to DNS name that is hosted by AWS
+			- AWS internally points the DNS to Primary Instance IP
+			- If primary is not available, it updates the DNS to point to one of the secondary instance
+			- so there is an automatic fail over to the secondary
+			- ex scenarios - Planned DB Maintenance, DB Instance failure, AZ failure
+			- all supported RDS DBs have Multi-AZ option except Aurora which manages this in a different manner
+		- Read Replicas - For Performance
+			- used for scaling, not for DR
+			- Must have automated backups (described below) turned on in order to deploy a read replica
+			- created for handling read only requests to improve performance
+			- asynchronously replication from the primary RDS instance to read replicas
+			- No automatic failover - if primary fails, you are not automatically routed to the read replica
+			- You need to explicitly point to the read replica URL to read from it (only read)
+			- You can have upto 5 read replicas
+			- you can create read replicas of read replicas (but watch out for latency)
+			- you can have read replicas that have Multi-AZ
+			- you can create read replicas of Multi-AZ source databases
+			- you can also have read replica in second region
+			- read replicas can be promoted to be their own databases - this breaks the replication
+			- Use case
+				- if you have too many read queries and very few updates, it makes sense to setup read replicas
+				- Blog sites are the best example
+			- only following DBs support read replicas - MYSQL, Postgres, MariaDB, Aurora
+			- following DBs does not support read replicas - Oralce, SQL Server
+		- RDS runs on virtual machines
+		- you cannot log into these os
+		- patching of OS and DB is AWS responsibility
+		- RDS is not serverless
+		- but Aurora Serverless is serverless
+		- you can switch your DNS to point to the secondary instance explicitly by “Reboot with failover” option
+			- first select “Reboot” and it will prompt for “Reboot with failover”
+		- you can migrate the supported RDS instance to a “Aurora Instance” by using the option
+			- “Create Aurora Read Replica” 
+			- Once the Aurora instance is created, you can then promote the instance to be master/primary db
+	- Two different types of backups for RDS
+		- Automated Backups
+			- recover your database to any point in time within a “Retention Period”
+			- Retention Period can be between 1 and 35
+			- Automated backups will take a full daily snapshot
+			- It will also store transaction logs throughout the day
+			- During recovery
+				- It will take the most recent daily backup and then apply transaction logs relevant to that day
+				- This will allow you to do a point in time recovery down to a second within the retention period
+			- Automated backups are enabled by default
+				- backup data is stored in s3 and you get free storage space equal to the size of the db
+			- backups are taken during a defined window 
+			- storage I/O may be suspended while your data is being backup up
+			- you may experience elevated latency because of the above
+		- Database Snapshots
+			- user initiated (done manually)
+			- they are stored even after you delete your original RDS instance, unlike automated backups
+			- while deleting your RDS instance, you are prompted to take the final snapshot of the db
+		- When you restore DB (either Automatic or Snapshot) 
+			- the restored version will be a new RDS instance with a new DNS endpoint
+	- Encryption
+		- All supported DBs provide encryption at rest
+		- Encryption done using Key Management Service (KMS)
+		- Once the RDS is encrypted
+			- Data stored at rest in the underlying storage is encrypted
+			- Same applies to automated backups, read replicas and snapshots
+		
+
+Datawarehouse (OLAP - Online Analytical Processing)
+	- Used for business Intelligence 
+	- Tools like Cognos, Jaspersoft, SQL Server Reporting Services, Oracle, Hyperion, SAP NetWeaver
+	- Used to pull in very large and complex data sets for querying purpose
+	- Uses a different type of architecture both from a database perspective and infrastructure layer
+	- Amazon’s Datawarehouse solution is called “Redshift”
+
+DynamoDB (NoSQL)
+	- fast and flexible NoSQL database service 
+	- for all applications that need consistent, single-digit millisecond latency at any scale
+	- fully managed database
+	- supports both key-value and document models
+	- flexible data model and reliable performance
+	- great fit for mobile, web, gaming, ad-tech, IOT etc
+	- stored on SSD storage
+	- spread across 3 geographically distinct data centres
+	- eventual consistent reads (default) and strongly consistent reads
+RedShift (Datawarehouse / OLAP)
+	- Amazon Datawarehouse solution is called RedShift
+	- It is used for business intelligence
+	- Fast and powerful, fully managed, petabyte-scale data warehouse service in the cloud
+	- Customers can start small for just $0.25 per hour with no commitments or upfront costs
+	- scale to petabyte or more for $1000 per terabyte per year
+		- less than a tenth of most other datawarehouses solutions
+	- OLAP transaction example (pulls large number of records for analytical purpose)
+		- Net profit of EMEA and Pacific for the Digital Radio product case study
+			- sum of radios sold in each region respectively
+			- unit cost for radio in each region respectively
+			- sale price of each radio in each region
+			- sale price - unit cost of each radio in each (profit for each radio)
+			- aggregate net profit for each region
+	- Can put severe stress on the database - hence transactional database is always separated
+		- to have a separate Datawarehouse for such analytical activities
+
+	- Datawarehouse databases use different type of architecture both from
+		- database perspective
+		- infrastructure layer
+	 
+	- Can be configured as follows
+		- Single Node (160GB)
+
+		- Multi Node (see following components)
+			- Leader Node: Manages client connections and receives queries
+			- Compute Node: store data and perform queries and computations (upto 128 compute nodes per leader)
+
+	- Compression
+		- Concept
+			- Columnar datastore can be compressed much more than row-based data stores
+				- because similar data is stored sequentially in database
+
+		- RedShift employees multiple compression techniques and can achieve significant compression
+			- relative to traditional relational data stores
+			- when loading data into empty table, Redshift automatically samples your data
+				- and selects the most appropriate compression scheme
+		- Redshift doesn’t require indexes or materialised views and so uses less space than traditional ones
+	
+
+	- Massive Parallel Processing (MPP)
+		- Automatically distributes data and query load across all nodes
+		- Makes it easy to add nodes to your data warehouse and thus enables
+			- fast query performance as your data warehouse grows
+
+	- Backups
+		- Enabled by default with a 1 day retention period
+		- Maximum retention period is 35 days
+		- Redshift always attempts to maintain 3 copies of your data
+			- Original and replica on the compute nodes and a backup in Amazon S3
+		- RedShift can also asynchronously replicate your snapshots to S3 in another region for DR
+
+	- Pricing
+		- Based on compute node hours 
+			- total number of hours you run across all your compute nodes for the billing period
+			- you are billed for 1 unit per node per hour 
+				- so a 3-node cluster running persistently for an entire month would incur 2160 instance hours
+		- You’ll be charged for backup
+		- You’ll be charged for Data transfer (only within a VPC, not outside it)
+		- Leader nodes are not charged (only compute nodes are charged)
+
+	- Security Considerations
+		- Encrypted in transit using SSL
+		- Encrypted at rest using AES-256 encryption
+		- By default RedShift takes care of key management
+			- Manage your own keys through HSM
+			- AWS Key Management Service
+
+	- Availability
+		- Currently only available in 1 AZ
+		- Can restore snapshots to new AZs in the event of an outage	
+
+ElasticCache
+	- A web service that makes it easy to deploy, operate and scale an in-memory cache in the cloud
+	- The service improves the performance of web applications and database
+		- by allowing you to retrieve information from fast, managed in-memory caches rather than from DB disk files
+	- Supports two open source in-memory caching engines
+		- Memcached
+			- Scale Horizontally - Yes
+			- Mullti-Threaded Performance - Yes
+			- Advance Data Types - No
+			- Ranking/Sorting data sets - No
+			- Pub/Sub capabilities - No
+			- Persistence - No
+			- Multi-AZ - No
+			- Backup & Retore Capabilities - No
+		- Redis
+			- Scale Horizontally - No
+			- Mullti-Threaded Performance - No
+			- Advance Data Types - Yes
+			- Ranking/Sorting data sets - Yes
+			- Pub/Sub capabilities - Yes
+			- Persistence - Yes
+			- Multi-AZ - Yes
+			- Backup & Restore Capabilities - Yes
+
+(see the latest comparison here - https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/SelectEngine.html)
+
+Choose Memcached if the following apply for you:
+- You need the simplest model possible.
+- You need to run large nodes with multiple cores or threads.
+- You need the ability to scale out and in, adding and removing nodes as demand on your system increases and decreases. 
+- You need to cache objects, such as a database.
+
+ElastiCache for Redis (Cluster mode enabled) version 3.2.4
+If you need the functionality of Redis 2.8.x plus the following features, choose Redis 3.2.4 (clustered mode):
+You need to partition your data across two to 90 node groups (clustered mode only).
+You need geospatial indexing (clustered mode or non-clustered mode).
+You don't need to support multiple databases.
+Important
+Redis (cluster mode enabled) has the following limitations:
+No scale-up to larger node types
+No changing the number of replicas in a node group (partition)
+ElastiCache for Redis (non-clustered mode) 2.8x and 3.2.4 (Enhanced)
+If the following apply for you, choose Redis 2.8.x or Redis 3.2.4 (non-clustered mode):
+You need complex data types, such as strings, hashes, lists, sets, sorted sets, and bitmaps.
+You need to sort or rank in-memory datasets.
+You need persistence of your key store.
+You need to replicate your data from the primary to one or more read replicas for read intensive applications.
+You need automatic failover if your primary node fails.
+You need publish and subscribe (pub/sub) capabilities—to inform clients about events on the server.
+You need backup and restore capabilities.
+You need to support multiple databases.
+
+		
+Aurora
+	- MYSQL and Postgres SQL compatible relational database engine 
+		- that combines the speed and availability of high-end commercial databases
+		- with the simplicity and cost-effectiveness of open source databases
+	- 5 times better performance than MYSQL 
+	- at a price point one tenth that of a commercial database while delivering similar performance and availability
+	- starts with 10GB, scales in 10GB increment to 64TB (Storage Autoscaling)
+	- compute resources can scale upto v32CPUs and 244GB of Memory
+	- 2 copies of your data in each availability zone, with minimum of 3 AZ. 6 copies of your data
+	- note that Aurora is not currently supported in the region that does not have 3 AZs
+	- it is designed to transparently handle 
+		- the loss of upto 2 copies of data without affecting write availability
+		- the loss of upto 3 copies of data without affecting read availability
+	- Aurora storage is also self-healing
+		- Data blocks and disks are continuously scanned for errors and repaired automatically
+	- Comparsion
+		Number of Replicas: Aurora: 15	MYSQL: 5
+		Replication frequency: Aurora:millseconds MYSQL:seconds
+		Automated failover: Aurora:Yes MYSQL:No
+		Performance impact on primary: Aurora:Low MYSQL:High
+	- Automated Backups are always enabled and no impact on performance
+	- You can take snapshots with Aurora - again no impact on performance - share snapshots with other aws accounts
+	- Database Migration simple steps
+		- You can take a RDS instance and create a Aurora Read Replica
+		- Once read replica is created, you can “Promote Read Replica” that will convert that into a working DB
+		- You can also take a snapshot of the Aurora read replica and create another Aurora DB from that
+	
+	
+		
+DocumentDB
+Neptune

@@ -1,0 +1,98 @@
+ 
+
+Hello Shivas, Shekhar
+ 
+Apologies for the delay however, please find the MOM and learning plan for our call this week. Please feel free to add any pointer that I might have missed.
+ 
+Points Discussed:
+ 
+1.       Microservices- Please find the learning plan for you to have a look and post your trigger we can get this rolled out to GS, Noida
+2.       AWS - Intermediate to Advance level learning plan to be shared with shivas in the week of 19 August , No certification targets for now.
+3.       React Native, React JS- Intermediate to Advance level learning plan to be shared with shivas in the week of 19 August , No certification targets for now.
+ 
+J-Meter and DevOps to be picked up in Early November based upon the status of the above mentioned learning
+ 
+Microservices Learning Plan
+Session Title
+The Principles of Microservices
+
+https://www.oreilly.com/library/view/the-principles-of/9781491935811/
+
+Getting Started with Serverless—An Introduction to Serverless Technology, FaaS, and Baas
+https://www.oreilly.com/learning-paths/learning-path-getting/9781492042099/
+
+Additional References   Live Training Options:
+Please watch out Live Training Options in Safari. You can enroll to it and receive the recordings, even if you are unable to attend the same.
+
+https://learning.oreilly.com/live-training/?upcoming=60&topic=Programming
+
+Couple of Microservices Live training options: 
+- https://learning.oreilly.com/live-training/courses/microservice-fundamentals/0636920279549/
+- https://learning.oreilly.com/live-training/courses/microservice-collaboration/0636920279617/ 
+- https://learning.oreilly.com/live-training/courses/microservice-decomposition-patterns/0636920279723/
+- https://learning.oreilly.com/live-training/courses/microservice-fundamentals/0636920279778/
+
+Additional topics/references:
+
+https://www.youtube.com/watch?v=9Ik96SBaIvs 
+https://sapient.udemy.com/microservices-software-architecture-patterns-and-techniques/
+12 factor apps -  https://www.youtube.com/watch?v=zLltQxVb3NI
+Microservices basics - https://www.youtube.com/watch?v=j1gU2oGFayY
+Spring Boot for beginners - https://www.youtube.com/watch?v=PSP1-2cN7vM
+
+Few easy Hands-on references:
+
+https://katacoda.com/learn
+https://glitch.com/
+https://repl.it
+https://runkit.com/home
+ 
+Phase – 2
+Migrating Microservices to Serverless—Understanding Serverless Technology and Addressing Serverless Concerns
+https://learning.oreilly.com/learning-paths/learning-path-migrating/9781492042136/
+
+Preventing Security Threats to Microservices Architectures
+https://learning.oreilly.com/learning-paths/learning-path-preventing/9781492041528/
+ 
+Phase-3
+Building Secure Microservices Architectures
+https://learning.oreilly.com/learning-paths/learning-path-building/9781492041481/
+
+
+Detecting, Responding, and Recovering from Threats to Microservices Architectures
+https://learning.oreilly.com/learning-paths/learning-path-detecting/9781492041542/
+
+
+Reactive Microservices - https://learning.oreilly.com/learning-paths/learning-path-getting/9781492028611/
+
+Reactive Microservices - https://learning.oreilly.com/learning-paths/learning-path-building/9781492035268/
+ 
+ 
+ 
+Pleas feel free to connect in case of any related questions/ suggestions.  
+ 
+Thank you!
+ 
+Rohit Marwah  Strategist-Financial Services & Mobile
+Learning & Organisational Development
+Unit-1,Gurugram | Hand phone: +91 8971333328 
+  https://jwt.io/#debugger-io?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gQUJDIiwiaWF0IjoxNTE2MjM5MDIyfQ.hIUzhtBjZ1rdKNZ_7i8TB_rsSxcMHD2972AYJG7kB00
+ 
+
+Questions from Shivas
+
+1.Is this all?, i.e. the complete course for Microservices in 3 phases or these are initial phases and more to come?  , as I see some more advanced topics/things that should be there currently missing,  like:
+ 
+A. Best Practices while designing Microservices
+B. Things to be kept in mind/approaches for converting a traditional Monolith application to Microservices Architecture
+Will the above be covered in Phase 3 below?
+ 
+C.CI/CD pipelines in Microservices Env. ,how to achieve robust CI/CD goals in a Microservices environment?
+ 
+D. Orchestration in Microservices
+ 
+E. Microservices Patterns
+ 
+Let me know if there’s already a plan to cover these? Or are being covered in Phase 3 below?
+ 
+ 

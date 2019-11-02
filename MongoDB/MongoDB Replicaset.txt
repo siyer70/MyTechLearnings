@@ -1,0 +1,224 @@
+step 1: Create directory
+mkdir -p /home/data/rs1
+mkdir -p /home/data/rs2
+mkdir -p /home/data/rs3
+
+step 2: Create Config Directory
+mkdir -p /home/data/config
+mkdir -p /home/data/log/mongodb/
+mkdir -p /home/data/processids/
+mkdir -p /home/data/keyfile/
+
+step 3: Making owner mongod for data file and folders
+cd /home
+
+chown -R mongod.mongod data/
+
+chown -R mongod.mongod rs1/
+chown -R mongod.mongod rs2/
+chown -R mongod.mongod rs3/
+chown -R mongod.mongod /data/log/mongodb/
+chown -R mongod.mongod /data/processids/
+chown -R mongod.mongod /data/keyfile/
+chown -R mongod.mongod /data/log
+
+chown -R mongod.mongod /home/data
+
+Step 4: make a keyfile
+openssl rand -base64 756 > /home/data/keyfile/mongo.keyfile
+chmod 600 /home/data/keyfile/mongo.keyfile
+chown mongod.mongod /home/data/keyfile/mongo.keyfile
+
+Step 5:Create a Config File
+vi /home/data/config/mongod1.conf
+
+Step 6:Insert config file contents first node
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/data/log/mongodb/mongod1.log
+
+storage:
+  dbPath: /home/data/rs1/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 40000
+  bindIp: 127.0.0.1  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/data/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/data/config/mongod1.conf
+
+Step 7:Insert config file contents second node (vi /home/data/config/mongod2.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/data/log/mongodb/mongod2.log
+
+storage:
+  dbPath: /home/data/rs2/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 40001
+  bindIp: 127.0.0.1  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/data/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/data/config/mongod2.conf
+
+Step 8:Insert config file contents third node (vi /home/data/config/mongod3.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/data/log/mongodb/mongod3.log
+
+storage:
+  dbPath: /home/data/rs3/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:k
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 40002
+  bindIp: 127.0.0.1  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/data/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/data/config/mongod3.conf
+
+step 9: start three mongodb instances
+/usr/bin/mongod -f /home/data/config/mongod1.conf 
+/usr/bin/mongod -f /home/data/config/mongod2.conf
+/usr/bin/mongod -f /home/data/config/mongod3.conf
+
+step 10: connect to mongo port 40000
+mongo --port 40000
+
+step 11: Initiate Replicaset
+rs.initiate()
+
+--wait for sometime
+
+use admin
+db.createUser({user:"admin",pwd:"admin",roles:["root"]})
+
+use admin
+db.auth("admin","admin");
+
+step 12: Add another two members
+rs.add("localhost.localdomain:40001");
+rs.add("localhost.localdomain:40002");
+
+step 13: Replicaset Status
+rs.status()
+
+step 14:Change configuration
+var conf = rs.conf();
+conf.members[1].priority=100;
+rs.reconfig(conf); //election will happen
+
+Replicaset member type : 
+Primary -->Accepts Writes
+Secondary --> Replicates writes from primary or secondary
+Arbiter --> No data just for election purpose
+Removed --> Removed from Replication
+startup --> setting up configuration (parsing of configuration)
+startup2 --> member is joined and performing initial sync
+Recovering --> Either Rollback or resync
+unknown --> 
+Down --> Replicaset member is not reachable
+FATAL --> Something I need to unacceptable
+
+Explain Majority---> if not majority ??
+
+Heartbeat-->communication between two members at every 2 seconds
+
+Explain Election
+Logs while elections
+Wed Jun 20 17:44:02 [rsMgr] replSet info electSelf 1
+Wed Jun 20 17:44:02 [rsMgr] replSet couldn't elect self, only received -9999 votes
+
+Most recently synced member will become primary.
+rs.addArb("server-5:27017")
+rs.add({"_id" : 4, "host" : "server-5:27017", "arbiterOnly" : true})
+
+Production-->Avoid using arbiter
+
+priorty: rs.add({"_id" : 4, "host" : "server-4:27017", "priority" : 1.5})
+
+Hidden Member with priority 0
+config.members[2].hidden = 0
+
+slaveDelay ---> why it is required?
+
+Syncing --> Oplog capped Collection (No Oplog in )
+
+Rollback -->
+
+WriteConcern --> 
+Read Preference : primary, primary preferred, secondary, secondary preferred,nearest
+
+Read concern -->local, majority, linearizable
+
+Geo graphical distribution
+var config = rs.config()
+> config.members[0].tags = {"dc" : "us-east"}
+> config.members[1].tags = {"dc" : "us-east"}
+> config.members[2].tags = {"dc" : "us-east"}
+> config.members[3].tags = {"dc" : "us-east"}
+> config.members[4].tags = {"dc" : "us-west"}
+> config.members[5].tags = {"dc" : "us-west"}
+> config.members[6].tags = {"dc" : "us-west"}
+
+use nilaptest
+db.createUser({user:"appread",pwd:"appread",roles:["read"]})
+db.createUser({user:"appreadwrite",pwd:"appreadwrite",roles:[{ role: "readWrite", db: "nilaptest" }]})
+db.createUser({user:"appreadwrite1",pwd:"appreadwrite1",roles:[{ role: "readWrite", db: "nilaptest" }]})
+db.dropUser("appreadwrite1");
+
+
+for(i=1;i<1000000;i++){db.testcoll.insert({"a":i})};
+
+

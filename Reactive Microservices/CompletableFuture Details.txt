@@ -1,0 +1,19 @@
+
+Source: https://www.callicoder.com/java-8-completablefuture-tutorial/
+
+
+Fundamentals
+
+- CompletableFuture is used for asynchronous programming in Java.
+
+- Asynchronous programming is a means of writing non-blocking code 
+	- by running the task in a separate thread than in the main thread
+	- and notifying the main thread about its progress
+		- completion or failure
+	- this way main thread 
+		- does not get blocked / wait for the completion of task
+		- can execute other task in parallel
+
+- Having this kind of parallelism greatly improves the performance of the program
+
+

@@ -1,0 +1,12 @@
+Install Gradle
+
+sudo chown -R $(whoami) /usr/local/share/man/man8
+chmod u+w /usr/local/share/man/man8
+
+sudo chmod +t /private/tmp
+
+brew install gradle
+
+
+https://www.linuxquestions.org/questions/linux-software-2/what-do-it-mean-by-chmod-t-279947/
+

@@ -1,0 +1,20 @@
+Question 1: Which are the following are true of the _id key in MongoDB documents?
+Option 1: If you do not assign an _id, One will be assigned for you by MongoDB. - true
+Option 2: you can assign your own value to _id, but it must be of type Object ID. - false
+Option 3: Values assigned to the _id key in a document must be unique across all collections - false
+Option 4: Values assigned to the _id field must be unique within a collection on a single shard - false
+Option 5: Updating a document updates its _id field as well - false
+
+Question 2: Which features of relational database management systems were deliberately omitted in MongoDB in order to obtain horizontal scalability? Check all that apply
+Option 1: Multi statement transactions
+Option 2: Authentication
+Option 3: Joins 
+
+  
+Question 3: Which of the following describe situations where MongoDB has a clear advantage over typical relational database? Check all that apply
+
+Option 1: The data model changes frequently - true
+Option 2: Developers needs to get application into production quickly - true
+Option 3: Many long running complex transactions are present - false
+Option 4: Queries from applications are adhoc and unpredictable - true
+

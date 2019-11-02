@@ -1,0 +1,77 @@
+1)Suppose you wanted to draw from the sample collection to perform an aggregation operation which you wanted to skip the first 1000 documents and display only the candidate field for all documents with “year” 1990 and “test”not equal to true
+
+Which of the following queries would perform this operation correctly and most efficiently ?
+
+Option 1 : db.sample.aggregate([ {$match : { test : {$ne : true}, year : 1998}},{ $skip: 1000 }, 
+	     {$project : { candidate : 1} } ])                      
+		 
+Option 2: db.sample.aggregate([{$skip : 1000, { $match : { test : { $ne : true }, year : 1998 }},
+	    {$project : { _id : 0, candidate : 1 } ]}
+Option 3: db.sample.aggregate( [{ $match: {test : {$ne : true}}}, {$skip  : 1000}, 
+	    {$match : { year : 1996}} ])
+Optoin 4: db.sample.aggregate([ $skip: 1000}, {$filter: {test : true} }, {$match : year : 1998}},
+	   {$project : { candidate : 1 } ] )
+Option 5 : db.sample.aggregate([ {$skip : 1000}, {test : true, year : 1998}, 
+	    {$project : { _id : 0, candidate : 1 } ]}
+		
+Answer: tedious question
+
+2)Suppose you have the following collection with only 2 documents 
+
+db.people.find()
+{“_id”:”apples”, “traits”: {“sweet”, “crispy”}},
+{“_id”:”oranges”, “traits”:{“sweet”, “orange”,”juicy”}
+
+You run an aggregation query and begin with { $unwind : “$traits”}
+
+How many documents will you have in the pipeline after the $unwind stage ?
+
+1, 2, 3, 4, 5 (select any of one)
+
+Answer : 5
+
+db.people.insert({"_id":"apples", "traits": ["sweet", "crispy"]})
+db.people.insert({"_id":"oranges", "traits":["sweet", "orange","juicy"]})
+
+db.people.aggregate([{"$unwind":"$traits"}]);
+
+4. Which of the following statements are true about the $match pipeline operator ? Check all that apply ?
+
+You should use it as early as possible in the pipeline  --> true
+It can be used as many times as needed  			    --> true
+It has syntax similar to find() commands				--> true
+
+5. he following example document from collection “pets”
+
+{
+"_id" : 334244122,
+"name" : "Bob",
+"pets": [ "dog", "cat", "alligator" ]
+}
+
+Each collection in document represents a different position 
+
+In this and the two questions that follow, complete the query below to produce an aggregation that will allow you to determine the average number of pets owned by  people in this collection
+
+Db.pets.aggregate([
+	{ (PART A) : "$pets"},
+	{ "$group" : { "_id" :  "$_id",
+		           "n_pets" : (PART B) } },
+	{ (PART C) : { "_id" : 1, 
+		 	"average_pets" : { "$avg" : "$n_pets" } } )
+
+Part A   $group, $match, $project, $unwind, $sort                                                  ---> $unwind
+Part B  { $sum  : 1,  $avg: "$n_Pets", $count : "$n_pets", length : "$pets",  size : "$pets"}      ---> $sum  : 1
+Part C  $group, $match,  $project, $unwind, $sort												   ---> $group
+
+db.pets.insert({"_id" : 334244122, "name" : "Bob", "pets": [ "dog", "cat", "alligator" ]})
+db.pets.insert({"_id" : 334244124, "name" : "Ankit", "pets": [ "Billi"]})
+db.pets.insert({"_id" : 334244126, "name" : "Yash", "pets": [ "Billi", "dog" ]})
+
+
+db.pets.aggregate([
+{"$unwind":"$pets"},
+{$group:{"_id":"$_id", "n_pets":{$sum  : 1}}},
+{$group:{ "_id" : 1, "Average Pets":{"$avg":"$n_pets"}}}
+]);
+

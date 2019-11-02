@@ -1,0 +1,16 @@
+1. https://sourceforge.net/projects/centos-6-vmware (CentOS download)
+2. https://appnee.com/vmware-workstation-pro-universal-license-keys-collection/ (VMWare Keys)
+3. http://repo.mongodb.org/yum/redhat/7Server/mongodb-org/4.0/x86_64/ (mongodb path)
+
+MMAPV1
+
+username:tom
+password:tomtom
+
+ifconfig
+
+username:root
+password:tomtom
+
+mkdir -p /var/lib/mongo
+chown -R mongod.mongod /data/log/mongodb/

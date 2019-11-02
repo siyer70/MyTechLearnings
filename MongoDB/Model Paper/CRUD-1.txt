@@ -1,0 +1,80 @@
+local database : crud_database_1
+
+Question1 : Suppose you have a collection products composed of any of following documents
+
+db.products.insert({"_Id": 1,"Product":"ePod","Price":200,
+"reviews": [{"user":"fred","comments":"OR!","rating":5},{"user":"tom","comments":"fup","rating":3}]})
+
+db.products.insert({"_id":2, "Prooduct":"ePad", "Price":500, 
+"reviews":[{"user":"bill","comment":"This is good but …","rating":4},{"user":"marie","comment":"I love this …","rating":5}]})
+
+db.products.insert({"_id":3, "Product":"eComputer", "Price":1500, "reviews" :[{"user":"Horace", "comment":"Pretty good…", "rating":"4"}]})
+
+db.products.insert({"_id":4, "Product":"eBook", "Price":20, "reviews" :[{"user":"mary", "comment":"test","rating":4},{"user":"alice","comment":"meh","rating":3}]})
+
+db.products.insert({"_id":5, "Product":"eMovie", "Price":15, 
+"reviews" :[{"user":"louise", "comment":"Its Ok","rating":3}, {"user":"bob", "comment":"Don’t Really", "rating":1}, 
+{"user":"sue","comment":"I like it","rating":3}]})
+
+db.products.find({ "Price" : {"$lt":300},"reviews.rating":{"$gte":4}}).count()
+Options : 0, 1, 2, 3, 4, 5
+Answer : 2
+
+Question2:  Which of the documents below would be mutuated by the following update? Assume all documents are in sample collection. Check all that apply
+db.sample.update({"a":2},{"$addToSet":{"a":5}},{"multi":true})
+Option1 : db.sample.insert({"_id":1, "a":[4,2,5]})
+Option2 : db.sample.insert({"_id":4, "a":[4,6,7]})
+Option3 : db.sample.insert({"_id":2, "a":[5,3]})
+Option4 : db.sample.insert({"_id":3, "a":[1,2,3]}) ---> In this array 5 will be added
+Option5 : db.sample.insert({"_id":5, "a":[2,5]})
+
+Question3: Given a collection “col” composed only these documents.
+db.col.insert({"_id":1, "a":1, "b":[3]})
+db.col.insert({"_id":11, "a":"5", "b":[5,3,7]})
+db.col.insert({"_id":111, "a":1, "b":[3,5]})
+db.col.insert({"_id":12, "a":"5", "b":["alpha",5]})
+
+Which one of the queries below will return only the following documents from this collection?
+document: {"_id":11, "a":"5", "b":[5,3,7]}
+document: {"_id":111, "a":1, "b":[3,5]}
+
+Radio Option
+
+Option1 : db.col.find({"b":[3,5]})
+Option2 : db.col.find({"b":{"$in":[3,5]}})
+Option3 : db.col.find({"b":{"$and":[3,5]}})
+Option4 : db.col.find({"b":{"$all":[3,5]}})
+Option5 : db.col.find({"b":3,"b":5})
+
+Answer: db.col.find({"b":{"$all":[3,5]}})
+
+Question4 : Which of the following will be retrived by the following query ? Assume the documents are stored in collection called “Sample”. Check all that apply
+
+db.sample1.find({"$or":[{ "a": {"$in":[3,10]}},{"b":{"$lt":2}}]})
+
+Option1: db.sample1.insert({_id:8, "a":11, "c":1, "b":0}) - b<2 
+Option2: db.sample1.insert({_id:2, "a":2, "c":0, "b":1}) - b<2
+Option3: db.sample1.insert({_id:5, "a":3, "c":0, "b":12}) - a:3
+Option4: db.sample1.insert({_id:3, "a":4, "c":0, "b":14})
+Option5: db.sample1.insert({_id:6, "a":1, "c":1, "b":5})
+Option6: db.sample1.insert({_id:1, "a":0, "c":0, "b":2})
+Option7: db.sample1.insert({_id:4, "a":5, "c":0, "b":17})
+Option8: db.sample1.insert({_id:9, "a":17, "c":1, "b":1}) - b<2
+Option9: db.sample1.insert({_id:10, "a":3, "c":1, "b":1}) - b<2, a:3
+Option10: db.sample1.insert({_id:7, "a":8, "c":1, "b":7})
+
+Question5: You perform the following query on the saying collection, which has index 
+{quote:”text”}
+
+db.saying.find({ $text:  {$search: "fact find"}})
+
+db.saying.createIndex( { quote: "text" } )
+
+Assume the following documents are in the collection. Which ones will the query return? 
+Check all that apply.
+
+db.saying.insert({_id:3 , quote: "Nobody will never catch me"})
+db.saying.insert({_id:1, quote: "That’s a fact Jack"})
+db.saying.insert({_id:2, quote: "Find Out if that fact is correct"})
+
+

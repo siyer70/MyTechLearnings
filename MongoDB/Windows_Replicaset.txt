@@ -1,0 +1,31 @@
+Member 1: Make directories
+step 1: mkdir -p C:\data\member1  C:\data\member2 C:\data\member3
+
+step 2: Initiate mongod processes
+mongod --replSet rs --port 30001 --bind_ip localhost --dbpath C:\data\member1 --smallfiles --oplogSize 128
+mongod --replSet rs --port 30002 --bind_ip localhost --dbpath C:\data\member2 --smallfiles --oplogSize 128
+mongod --replSet rs --port 30003 --bind_ip localhost --dbpath C:\data\member3 --smallfiles --oplogSize 128
+
+step 3: connect to mongodb instance
+mongo --port 30001
+
+step 4: Initiate Replicaset
+rsconf = {
+  _id: "rs",
+  members: [
+    {
+     _id: 0,
+     host: "localhost:30001"
+    },
+    {
+     _id: 1,
+     host: "localhost:30002"
+    },
+    {
+     _id: 2,
+     host: "localhost:30003"
+    }
+   ]
+}
+
+rs.initiate( rsconf )

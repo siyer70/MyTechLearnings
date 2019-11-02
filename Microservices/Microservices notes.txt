@@ -1,0 +1,367 @@
+Defintion
+	Small
+	Independent
+	Autonomous Services
+	the works well together
+
+
+- Attributes
+	- Servers are disposable
+	- Services are autonomous
+	- Fine-Grained SOA
+	- Loosely Coupled
+	- Upgraded Independently
+	- Uses HTTP / lightweight protocols (gRPC with Protobufs, NATs
+
+
+Often compared with SOA (Service Oriented Architecture)
+- there are some views that it is 
+	- "Fine-Grained SOA"
+	or
+	- SOA done in a lightweight fashion
+	- It is how SOA should be implemented
+
+
+Advantages
+	Convway’s law
+		Any Organisation designing a system will produce a design whose structure is a copy of Organisation communication structure.
+	
+	Organisational Alignment
+		Microservices align your architecture to your organisation and vice versa
+			Evolving architecture and organisation at the same time
+
+	Clear definition of who owns what 
+		for eg: Each service can be owned by a separate team
+	
+	Release Functionality faster
+		Think of Monolith application 
+			- one line of change in the code would involve all tests to be run
+			- whole thing need to be deployed and that’s big risk
+				- so to mitigate that you would do less frequent release
+				- less frequent release in turn means bigger batch size and bigger risk again
+				- and against the goal of shipping features faster and safer
+	
+	Independent Scaling
+
+Three axes of scalability
+Horizontal duplication
+Data Partitioning (users a to m routed to x and m to z routed to y)
+Functional Decomposition (Microservices are functionally decomposed services)
+	- Idea is that by breaking apart functions, you can scale component independently of each other
+		- to allow you to have improved resilience and improved throughput
+
+
+	Easier focus on security concerns
+		Security (with more elegant and sophisticated way)
+			You can focus your attention to specific areas of interest - for eg:
+				- Microservices that deal with payment details 
+				- data at transit and data at rest
+			The one that requires more attention could be handled with additional protection
+
+
+	Adapt technology faster
+		Due to multiple separate deploy units, you can consider 
+			- different technology choices, languages and databases
+			- more balanced portfolio of risk around technology
+			- that allows you to embrace new technologies
+
+	Embrace the uncertainty in Digital age
+		with finer grained APIs that Microservices provides, we have lot more opportunities to adapt
+
+
+Disadvantages
+- Many, Many Options is a disadvantage in itself
+- Takes time to see the benefits
+- Testing is more complex
+- Monitoring is more complex
+- Resiliency isn't free
+- Lot more boxes
+- Distributed systems are hard
+
+
+
+
+Martin Fowler's view
+Benefits
+	- Strong Module Boundaries
+	- Independent Deployment
+	- Technology Diversity
+
+But comes with cost
+	- Distribution ( are harder to program, since remote calls are slow and are always at risk of failure)
+	- Eventual Consistency
+	- Operational Complexity
+
+
+Key terms
+ Cross functional (no 'throwing over the fence')
+ Conways law
+ You build it and you run it
+ 2 pizza team
+
+
+
+Principles of Microservices
+===========================
+	- Modelled around business domain
+	- Culture of automation
+	- Hide implementation details
+	- Decentralize all the things
+	- Deploy independently
+	- Consumer First
+	- Isolate Failure
+	- Highly Observable
+
+
+Culture of automation
+---------------------
+
+Background: It takes time to realise the benefits of Microservices. For X company, it took enormous time to deliver the initial 2 Microservices and it continued for the next X Microservices. A lot of that work - the time-taken really to reach that inflection point in growth - all of that work was all around automation, around tooling. It starts with things like continous delivery.
+
+- Continuous Delivery
+	-  Continuous delivery builds on the ideas of continuous integration, but it moves to thinking of every single check in as a release candidate. That's a really big mindset shift as a developer. When I commit that code, I should be happy that that code can go into production. Ideas of build pipelines extend from this idea.
+
+- API Driven Machine Provisioning
+	- Organizations tend to want to have a separate machine/virtual machine/container per service, that in turn can lead to a lot of different components, a lot of different pieces of infrastructure you've got to manage. That's why things like API-driven host provisioning can be so important. 
+	- It doesn't have to be an off premise cloud like AWS or Digital Ocean though AWS is widely used by people using microservices (IaaS, PaaS, Caas)
+	- Infrastructure as Code (IaC) can really help here - Infrastructure as code (IaC) is the process of managing and provisioning computer data centers through machine-readable definition files, rather than physical hardware configuration or interactive configuration tools.
+
+- API Driven OS Configuration
+	- Once we've provisioned our machine, our isolated operating system of some form, we need to configure it. And here we have a very rich set of tools available to us. 
+
+	- We have things like Chef, Ansible, Puppet. DSC (Desired State Configuration) can also help here - These are declarative systems that allows us to make statement about our operation system / machine - how it should look like and it brings the machine to expected state. For Example, which version of OS and their default settings, and which softwares I need and their versions like apache, java etc
+
+	- These things are repeatable. The code can be checked in. This becomes very important as part of that process of producing and deploying our application quickly and efficiently. (Reference to IaC here)
+
+
+- Custom Image Creation
+	- Many of the platforms that allow you to use API-driven host provisioning allow you to also create custom images (for example AMI in AWS). This is where you take effectively the running state of an operating system with all the software on it and make it golden image. When I launch a copy of that image, it's the full operating system together with my running service.
+
+	- This can be really beneficial when you want to reduce the time it takes you to spin a new service up (for example in case of running in auto-scaling mode).
+
+	- This is all about making provisioning your service much easier, much faster.
+
+	
+- Platforms
+	- Background: You may want to start looking at different platforms as well. You may have heard about Iaas, PaaS and with emergence of CaaS (Container as a Service), this space is changing a lot. 
+
+	- Things like Alexi and Docker have made it much more cost effective to pack smaller and smaller isolated operating systems onto the same physical machine, making it much more cost effective to run things in a more isolated fashion. We're looking for cost effectiveness and efficiencies at scale.
+
+	- Docker Swarm, Kubernetes from google are good example
+
+	- It is predicted that more and more people are going to be using platforms as a service. We're thinking of things like off premise platforms and service like Heroku. But things I can run on premise like Deis, which will actually run on top of a Docker platform. These allow developers to just think about my tech stack. You're abstracted from how many machines you've got underneath. 
+
+ 
+- Declarative Environment Provisioning
+	-  It takes the same ideas from Puppet or Chef where you make a statement about what a node should look like. This node should have Apache and Java but applies it instead to a group of machines, a group of resources.
+
+	- For ex: With Docker Compose, you can declaratively define in yml file that says I built my application, which is a web application. I've got a redis instance, and that's over here. And how those two things are combined. Docker Compose allows to execute that and will bring the system into a converge that between where it is now where it needs to be (almost sort of DSC)
+
+	- For ex: HashiCorps Terraform tool. This allows you to do something similar but targets multiple different platforms. It will allow you to abstract out underlying platforms. So, for example, I could have one configuration that deploys an application onto Docker, a different configuration that deploys that same application in a different way on Amazon.
+
+- Automated Testing
+	- Mike Cohn's book Succeeding with Agile, he presents a testing model called "test pyramid". 
+		- tens and thousands of units tests, then service level tests, and then ui test at the top cutting across different components.
+
+	- Continuous Delivery by Jez Humble and Dave Farley
+
+	- Infrastructure as Code by Keif Morris
+
+
+Hide Implementation details
+---------------------------
+
+- Bounded Contexts (what to share and what to hide*)
+
+- Hide your database
+
+- Think about the protocols (Thrift, protocol buffers, xml, JSON - backward and forward compatibility)
+
+- Be careful of Client libraries
+
+
+Deploy Independently
+--------------------
+- One service per OS
+
+- Consumer driven contract (understand how the consumers are using the service and implement those tests to prevent breaking changes)
+
+If you need to introduce breaking changes - there are two approaches
+
+	- Co-existing service versions 
+		TradeOffs
+		- need to have a mechanism whereby the customer can discover the right version of the service
+		- You need to maintain both the versions until all your consumers start using the new version
+		- the new version should be backward compatible
+
+	- Multiple endpoints (support multiple Endpoints if you need to introduce breaking change)
+
+Consumer First
+--------------
+- It's about recognising that when we create all these services, they exist to be called by another party. That's the reason they're there.
+
+- We have an "inside out" mentality to service design. Rather it should be "outside in"
+- Understand who your consumers are and what they need
+- Have active conversation with your consumers
+- Consumer driven contract
+- Actionable Standards
+	- Having some actionable standards for people creating APIs can ensure the below
+		- a level of consistency that makes it easier for people to use your APIs in the first place.
+- API Documentation
+	- Swagger
+		- You can define metadata for your endpoints through annotations (for eg: through Jersey for Java)
+		- and then use swagger browser to see your endpoint documentation
+		- over and above it can give you a template where in you can actually execute those endpoints
+	- API Gateway - They provide
+		- Developer Portals - using which people can easily find what services are out there. 
+		- API key management
+			- For Public APIs, it can be used to monetise that API 
+				- so you know how many calls that certain individuals made
+					- you can then log that or throttle that
+
+			- For Internal ones - it become very useful to know who's calling your service
+
+- Service Discovery
+	- Service discovery is around how one service can find another
+	- Useful because they become a resource for knowing where things are.
+	- Some of the tools even provide basic dashboards and manage metadata
+	- Tools available
+		- Zookeeper
+		- etcd (Kubernetes uses this)
+		- consul (along with consul N for managing environment variables and consul template for files)
+		- eureka (spring boot)
+- Humane Registry
+	human centric designed place where I can see, 
+		this is my application. This is what it does. 
+		this is how I use it. this is what's happening to it right now in production. 
+		You're going to want to gather information from lots of different sources.
+
+
+Isolate Failures
+----------------
+
+- Microservices aren't reliable by default (expect each and every single component could fail and plan the mitigation i.e do some work to improve resiliency)
+
+- Cascading failure can hurt (you need to isolate failure from each and every part of your system)
+
+- Timeouts (configure timeout appropriately)
+
+- Bulkheads (if one part of the system fails, the other should still work - in the given example, when one thread pool got exhausted, separate thread pool assigned for each legacy app) - think about a big ship. You hit a rock. Water starts rushing into that compartment. You run down to the hold. You close that door. That compartment becomes flooded, but the rest of the ship is stable. So this is the idea of bulkheading, that these separate thread pools were our bulkheads. If one was exhausted, the rest could keep operating. 
+
+- Circuit Breakers
+	- Think what happens-- you get a surge of electricity. Your circuit blows. It protects your appliances. It protects your light-bulbs and things. And so when that's gone, you can reset the circuit breaker. In this context, the same thing happens. If a downstream service-- downstream connection-- errs enough in a short space of time, it's considered to be unhealthy. And the circuit blows. And then the service--  we could just hide that part of the UI or bring up an error page, so the customer knew that that piece of functionality wasn't available right now. That stops call to a potentially unhealthy service. It stops you tying up resources, talking to a timing-out service. And it's a very effective way of shedding potential load. The circuit breaker we implemented was also self-healing. And so after a certain period of time, we let enough calls go through to the downstream service-- and if they responded healthily enough, we would reset the circuit breaker and say, yes, it's ready. So that's a circuit breaker that's there to protect you from unplanned outages. But of course, just like the circuit breakers in your house, you can go and flick them when you're about to start drilling into walls or something like that. And so we could use those circuit breakers in the same way. When we wanted to redeploy the downstream legacy application, we could flip the circuit breaker off. The website degraded functionality. We deployed the new version of the service. And then we reset that circuit breaker. And the communication starts flowing again. So it can actually be a very useful thing for both planned and unplanned outages.
+
+Highly Observable
+=================
+- Log aggregation
+- Application metrics
+- Audit logging
+- Distributed tracing
+- Exception tracking
+- Health check API
+- Log deployments and changesnew
+
+
+Securing Microservices or Secure Microservices Architecture
+===========================================================
+
+Prevention
+	- Threat Modeling
+	- Protection in Transit
+	- Authentication and Authorization
+	- Service Meshes
+		- Simplifies communication between services
+		- Tools: linkerd.io and istio.io
+		- Functionality reuse
+			- Service Discovery
+			- Routing (blue/green deploys, canaries)
+			- Load Balancing
+			- Encryption
+			- Authentication and Authorization (passing JWT tokens across)
+			- Support for the circuit breaker pattern
+			- Tracing
+			- Connection resilience and retry
+		- Sidecar pattern (advantages)
+			- if you have platform specific service mesh (for ex: Spring Boot in Java) and 
+				if you have other services developed in different platforms, 
+					- you can use the sidecar pattern in this case to reuse the code
+
+			- Version Drift issues can also be solved via Sidecar pattern
+	- Protection at Rest
+	- Keeping a secret
+	- Patching
+	- Docker
+	- Three Rs
+Detection
+
+Recovery
+
+
+Event sourcing
+
+- Maintain an event store to track all events to the underlying entity
+- Interested services can then subscribe to these events
+
+- Advantage
+	- can rebuild / determine the state of the entity at any point in time
+
+- Downside
+	- additional complexity and may involve implementation of CQRS pattern
+
+
+
+
+
+Serverless
+
+- Backend as a Service (BaaS)
+	- Options
+		- Azure (Cosmos DB)
+		- AWS (DynamoDB, Aurora serverless)
+		- Google (Spanner, Bigtable, Datastore)
+	- Advantages
+		- Pay for Storage and Bandwidth
+		- Transparent scaling
+		- Reduced Admin (almost 0%)
+		- Implicit Durability
+		- Simplified Back-up
+	- 
+
+12 factors
+Methodology for building "software-as-a-service"
+
+I. Codebase
+One codebase tracked in revision control, many deploys
+
+II. Dependencies
+Explicitly declare and isolate dependencies
+
+III. Config
+Store config in the environment
+
+IV. Backing services
+Treat backing services as attached resources
+
+V. Build, release, run
+Strictly separate build and run stages
+
+VI. Processes
+Execute the app as one or more stateless processes
+
+VII. Port binding
+Export services via port binding
+
+VIII. Concurrency
+Scale out via the process model
+
+IX. Disposability
+Maximize robustness with fast startup and graceful shutdown
+
+X. Dev/prod parity
+Keep development, staging, and production as similar as possible
+
+XI. Logs
+Treat logs as event streams
+
+XII. Admin processes
+Run admin/management tasks as one-off processes

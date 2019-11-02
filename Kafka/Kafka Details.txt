@@ -1,0 +1,329 @@
+Note: All images mentioned in the notes are in the same directory where this file is located.
+
+
+Topics
+======
+
+- Topic is a particular stream of data
+	(often compared with table in a database for simplicity)
+
+- Topics are split into partitions
+
+- Each message within a partition gets an incremental id called offset
+Offset only have a meaning for a specific partition
+
+- Each partition is ordered - in other words, order is guaranteed only within a partition (not across partition)
+
+- Specify the number of partitions you want for a topic at the time of topic creation.
+
+- Data is kept only for a limited time (default is one week)
+
+- Once the data is written to a partition, it cannot be changed (Immutability)
+
+- Data is assigned randomly to a partition unless a key is provided
+
+
+Broker a.k.a Kafka Server
+=========================
+- A Kafka cluster is composed of multiple brokers (servers)
+
+- Each broker is identified by an ID (Integer) - for eg: 101, 102, 103
+
+- Each broker contains certain partitions
+
+- After you connect to any broker (also called bootstrapper broker), you will be connected to the entire cluster
+
+- A good number to get started is at least 3 brokers, but big clusters may have 100s of brokers
+
+- Example: let's say we have
+	- 3 brokers 101, 102, 103,
+	- topic A is configured to have 3 partitions
+	- topic B is configured to have 2 partitions
+
+	so we could have like the below
+	broker101 -> [ topicA_partition0, topicB_partition1 ]
+	broker102 -> [ topicA_partition2, topicB_partition0 ]
+	broker103 -> [ topicA_partition1 ]
+
+
+- see the image BrokersAndTopics.png
+
+
+Topic Replication Factor
+========================
+
+- Topic should have replication factor > 1 (3 is gold standard, 2 is bit risky)
+
+- This way if a broker goes down, another broker can serve the data
+
+- Example: let's say we have
+	- 3 brokers 101, 102, 103,
+	- topic A is configured to have 2 partitions and replication factor of 2
+
+	so we could have like the below
+	broker101 -> [ topicA_partition0 ]
+	broker102 -> [ topicA_partition1, topicA_partition0 ]
+	broker103 -> [ topicA_partition1]
+
+- See image TopicReplication
+
+Concept of Leader for a Partition
+=================================
+
+- At any time there can be only one leader for a given partition
+- Only that leader can receive and serve data for that partition
+- The other brokers will synchronize the data
+- Therefore each partition has one leader and multiple ISR (in-sync replica)
+
+
+- See images TopicReplicationWithLeader.png and TopicRepl..OneBrokerGoingDown
+
+Producers
+=========
+
+- Producers write data to topics (which is made of partitions)
+
+- Producers automatically know which broker and partition it needs to write to
+
+- In case of broker failures, producer will automatically recover
+
+- when a message is written without a key to a topic, the producer does a round-robin with available brokers and thus perform load balancing
+
+- when a message is written with key, Kafka guarantees that a message will always go to the same partition
+	- you'll typically send a key if you need message ordering for a specific field (for example: truck_id in trucking system)
+
+- Producers can choose to receive acknowledgement of data writes
+	- acks=0 i.e. no acknowledgement (possible data loss)
+	- acks=1 (default) i.e. waits for leader to acknowledge the write (limited data loss)
+	- acks=all i.e. Leader + replicas acknowledgement (no data loss)
+
+- see images Producer..WithoutKey.png and Producer..WithKey.png
+
+Consumers
+=========
+
+- Consumers read data from topic (identified by name)
+
+- Consumers know which brokers to read from
+
+- In case of broker failures, consumers know how to recover
+
+- Data is read in order within each partition
+
+- consumer can read from more than one partition
+	- in that case it will read some from one partition and some from other partition, as explained in previous point, order can only be maintained within each partition
+
+
+Consumer Groups
+===============
+- Consumers read data in consumer groups
+
+- Each consumer within a group reads from exclusive partitions
+
+- if you have more consumers than partitions, some consumers will be inactive
+
+- see images ConsumerAndConsumerGroups.png and InActiveConsumerScenarios.png
+
+
+Consumer Offsets and Delivery Semantics
+=======================================
+
+- Kafka stores the offsets at which a consumer group has been reading
+
+- The offsets committed live in a Kafka topic named __consumer_offsets
+
+- When a consumer in a group has processed data received from Kafka, it should be committing the offsets
+
+- Because of above, if a consumer dies and comes back again, it will be able to read back from where it left off - thanks to the committed consumer offsets!
+
+- Consumers choose when to commit offsets. There are 3 delivery semantics
+	- At most once
+		- offsets are committed as soon as the message is received 
+		- if the processing goes wrong, the message will be lost
+
+	- At least once (usually preferred)
+		- offsets are committed after the message is processed
+		- if the processing goes wrong, the message will be read again
+		- this can result in duplicate processing of messages.
+		- developer to make sure that processing is idempotent
+
+	- Exactly once
+		- can be achieved for Kafka => Kafka workflows using Kafka streams api
+		- for Kafka => External System workflows, use an idempotent consumer
+
+Kafka Broker Discovery
+======================
+
+- Every Kafka broker is also called a "bootstrap server"
+
+- That means that you only need to connect to one broker, and you will be connected to the entire cluster
+
+- Each broker knows about all brokers, topics and partitions (metadata)
+
+- see image KafkaBrokerDiscovery.png
+
+Zookeeper
+=========
+
+- Kafka has strong dependency on Zookeeper at the moment - it can't work without it
+
+- Zookeeper by design operates with an odd number of servers (3, 5, 7)
+
+- Zookeeper has a leader (handles writes), the rest of servers are followers (handle reads)
+
+Why Zookeeper
+-------------
+Well people long ago discovered that you need to have some way to coordinating tasks, state management, configuration, etc across a distributed system. Some projects have built their own mechanisms (think of the configuration server in a MongoDB sharded cluster, or a Master node in an Elasticsearch cluster). Others have chosen to take advantage of Zookeeper as a general purpose distributed process coordination system. So Kafka, Storm, HBase, SolrCloud to just name a few all use Zookeeper to help manage and coordinate.
+
+Kafka is a distributed system and is built to use Zookeeper. The fact that you are not using any of the distributed features of Kafka does not change how it was built. In any event there should not be much overhead from using Zookeeper.
+
+
+Role of Zookeeper
+-----------------
+- Zookeeper manages brokers (keeps a list of them)
+
+- Kafka manages all metadata in Zookeeper
+
+- It sends notifications to Kafka in case of changes. Example:
+	- New Topic
+	- Broker dies
+	- Broker comes up
+	- Delete topics
+
+- It helps in performing leader election for partitions
+
+- see image ZookeeperClusterAndKafkaBrokers
+
+Kafka Guarantees
+================
+
+- Messages are appended to a topic-partition in the order they are sent
+
+- Consumer read messages in the order stored in a topic-partition
+
+- With a replication factor of N, producers and consumers can tolerate upto N-1 brokers being down
+
+- This is why a replication factor of 3 is good idea
+	- Allows for one broker to be taken down for maintenance
+	- Allows for another broker to be taken down unexpectedly
+
+- As long as the number of partitions remains constant for a topic (no new partitions), the same key will always go to the same partition
+
+
+
+Kafka Connect
+=============
+
+Common use cases of Kafka
+
+Source => Kafka  -> Producer API ex: Twitter 
+
+Kafka => Kafka  -> Kafka Streams
+
+Kafka => Sink -> Consumer API ex: ElasticSearch
+
+Kafka => App -> Consumer API 
+
+
+For Source => Kafka, you can use Kafka Connect Source
+
+For Kafka => Sink, you can use Kafka Connect Sink
+
+Why Kafka Connect
+-----------------
+
+Developers commonly import data from the common sources such as
+Databases, JDBC, CouchBase, GoldenGate, SAP HANA, BlockChain, Cassandra, DynamoDB, FTP, IOT, MongoDB, MQTT, RethinkDB, Salesforce, Solr, SQS, Twitter
+
+
+Developers commonly export data to the common sources such as
+S3, ElasticSearch, HDFS, JDBC, SAP HANA, DocumentDB, Cassandra, DynamoDB, HBase, MongoDB, Redis, Solr, Splunk, Twitter
+
+If we need to code all by our own, it is tough to achieve 
+- Fault Tolerance
+- Idempotence
+- Distribution Ordering
+
+
+Advantages
+----------
+
+- Makes it super easy for non-experienced dev to quickly get their data reliably into Kafka
+
+- We just reuse Kafka Connect API to accomplish the above
+
+- Part of your ETL Pipeline
+
+- Scaling made easy from Small Pipelines to Company wide pipelines
+
+- Reusable Code!
+
+
+
+Kafka Connect Architecture
+------------------
+
+Source -> Kafka Connect Cluster -> Kafka Cluster -> Streaming Apps 
+
+and then back
+
+Streaming Apps -> Kafka Cluster -> Kafka Connect Cluster -> Sink
+
+
+Use Source Connectors to get data from Common Data Sources
+use Sink Connectors to publish that data in Common Data Sources
+
+See the Kafka architecture png file in the directory
+
+
+Kafka Streams
+-------------
+
+What
+
+Easy data processing and transformation library within Kafka.
+
+It can read from one or multiple topics and write back to one or multiple topics
+
+Advantages
+- Standard Java Application
+- No need to create a separate cluster
+- Highly scalable, elastic and fault tolerant
+- Exactly once capabilities (Delivery Semantics)
+- One Record at a time processing (no batching)
+
+Use cases
+- Data transformation
+- Data enrichment
+- Fraud Detection
+- Monitoring and Alerting
+
+Let's say you want to 
+- filter tweets that has over 10 likes or replies
+- count the number of tweets received for each hashtag every 1 minute
+
+- combine the two to get a trending topics and hashtags in real time
+
+while the above can be achieved with simple Kafka producer and consumer, it gets
+very low level and not developer friendly
+
+
+Summary
+=======
+
+- see the summary image
+
+References:
+
+
+Follow the confluent getting started link provided below
+https://docs.confluent.io/current/quickstart/ce-quickstart.html#ce-quickstart
+
+Kafka Tutorial:
+https://learning.oreilly.com/videos/apache-kafka-series/9781789342604
+
+
+
+
+
+

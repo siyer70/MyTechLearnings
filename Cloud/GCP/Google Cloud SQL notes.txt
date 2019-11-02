@@ -1,0 +1,48 @@
+Fully Managed Relational Database service
+	- Setup, Maintain, Manage, Administer
+
+	- Supports MYSQL and PostgresSQL
+
+	- Automatic replication
+
+	- Managed Backups
+
+	- Vertical scaling
+
+	- Horizontal Scaling (Read replicas)
+
+	- Google Security
+
+	- Accessible via GCP Services and other external services
+		- can be used with App Engine
+		- compute engine can be authorized to access
+			- using external ip address
+		- cloud sql can be configured with preferred zone
+		- external applications can access cloud sql
+			- tools sql workbench, toad can access cloud sql
+
+
+Cloud Spanner (Horizontally Scalable RDBMS)
+
+	- Horizontal scalability
+
+	- Supports Transactional Consistency at Global Level
+
+	- Supports Schema, SQL, Automatic Replication for high availability
+
+	- Supports petabytes of capacity
+
+Consider Cloud Spanner
+
+	- if you have outgrown any relational database
+
+	- sharding your database for throughput and high performance
+
+	- need transactional consistency
+
+	- global data and strong consistency
+
+	- or just want to consolidate your database
+
+	- examples: Financial applications and inventory applications
+

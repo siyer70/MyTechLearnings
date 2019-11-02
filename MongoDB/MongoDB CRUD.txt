@@ -1,0 +1,470 @@
+﻿***************************************CRUD Operations************************************************
+1)Insert Single Document
+Syntax: 
+db.collection.insertOne(
+   <document>,
+   {
+      writeConcern: <document>
+   }
+)
+
+db.inventory.insertOne(
+   { item: "canvas", qty: 100, tags: ["cotton"], size: { h: 28, w: 35.5, uom: "cm" } },
+   { w: "majority", wtimeout: 100 }
+)
+
+//Replicaset Level
+cfg = rs.conf()
+cfg.settings.getLastErrorDefaults = { w: "majority", wtimeout: 5000 }
+rs.reconfig(cfg)
+
+2)Insert Multiple Documents
+Syntax: 
+db.collection.insertMany(
+   [ <document 1> , <document 2>, ... ],
+   {
+      writeConcern: <document>,  
+      ordered: <boolean> (default true)
+   }
+)
+
+Example 1)
+db.inventory.insertMany([
+   { item: "journal", qty: 25, tags: ["blank", "red"], size: { h: 14, w: 21, uom: "cm" } },
+   { item: "mat", qty: 85, tags: ["gray"], size: { h: 27.9, w: 35.5, uom: "cm" } },
+   { item: "mousepad", qty: 25, tags: ["gel", "blue"], size: { h: 19, w: 22.85, uom: "cm" } }
+])
+
+Example 2)
+db.products.insertMany(
+      [
+         { _id: 1, item: "large box", qty: 20 },
+         { _id: 2, item: "small box", qty: 55 },
+         { _id: 3, item: "medium box", qty: 30 }
+      ]);
+	  
+try {
+   db.products.insertMany(
+      [
+         { _id: 1, item: "large box", qty: 20 },
+         { _id: 2, item: "small box", qty: 55 },
+         { _id: 3, item: "medium box", qty: 30 }
+      ],
+      { w: "majority", wtimeout: 100 },
+	  true
+   );
+} catch (e) {
+   print (e);
+}
+
+3)Insert Document 
+Syntax:
+db.collection.insert(
+   <document or array of documents>,
+   {
+     writeConcern: <document>,
+     ordered: <boolean>
+   }
+)
+
+db.products.insert(
+   [
+     { _id: 11, item: "pencil", qty: 50, type: "no.2" },
+     { item: "pen", qty: 20 },
+     { item: "eraser", qty: 25 }
+   ],
+   { w: "majority", wtimeout: 100 },
+   { ordered: true }
+)
+
+***************************************Query documents************************************************
+db.inventory.insertMany([
+   { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "A" },
+   { item: "paper", qty: 100, size: { h: 8.5, w: 11, uom: "in" }, status: "D" },
+   { item: "planner", qty: 75, size: { h: 22.85, w: 30, uom: "cm" }, status: "D" },
+   { item: "postcard", qty: 45, size: { h: 10, w: 15.25, uom: "cm" }, status: "A" }
+]);
+
+db.inventory.find({}).pretty();
+(SQL:select * from inventory)
+
+Specify Equality Condition (filter documents)
+{ <field1>: <value1>, ... }
+
+db.inventory.find({status:"D"}).pretty();
+(SQL:SELECT * FROM inventory WHERE status = "D")
+
+Query using $in Operator
+db.inventory.find({status:{$in:["A","D"]}}).pretty();
+(SQL:SELECT * FROM inventory WHERE status in ("A", "D"))
+
+Query using Multiple Condition (treated as $and)
+db.inventory.find({status:"A", qty:{$lt:30}}).pretty();
+db.inventory.find({$and:[{status:"A"},{qty:{$lt:30}}]}).pretty();
+(SQL:SELECT * FROM inventory WHERE status = "A" AND qty < 30)
+
+Query using $or Operator
+db.inventory.find({$or:[{status:"A"},{qty:{$lt:30}}]}).pretty();
+(SQL:SELECT * FROM inventory WHERE status = "A" OR qty < 30)
+
+Combination of $and + $or operator
+db.inventory.find({
+     status: "A",
+     $or: [ { qty: { $lt: 30 } }, { item: /^p/ } ]
+}).pretty();
+
+db.inventory.find({item: /^p/ })
+(SQL: SELECT * FROM inventory WHERE status = "A" AND ( qty < 30 OR item LIKE "p%"))
+
+db.inventory.find({ size: { h: 14, w: 21, uom: "cm" } }).pretty();
+db.inventory.find({ size: { w: 21, h: 14, uom: "cm" } }).pretty();
+
+Query on Nested Field
+db.inventory.find({"size.uom": "in"}).pretty();
+db.inventory.find({"size.h":{$lt:15}}).pretty();
+db.inventory.find({"size.h":{ $lt: 15 }, "size.uom": "in", status: "D" } ).pretty();
+
+***************************************Query on Array************************************************
+//db.inventory.drop()
+db.inventory.insertMany([
+   { item: "journal", qty: 25, tags: ["blank", "red"], dim_cm: [ 14, 21 ] },
+   { item: "notebook", qty: 50, tags: ["red", "blank"], dim_cm: [ 14, 21 ] },
+   { item: "paper", qty: 100, tags: ["red", "blank", "plain"], dim_cm: [ 14, 21 ] },
+   { item: "planner", qty: 75, tags: ["blank", "red"], dim_cm: [ 22.85, 30 ] },
+   { item: "postcard", qty: 45, tags: ["blue"], dim_cm: [ 10, 15.25 ] }
+]);
+
+//Exatch Match
+db.inventory.find({tags:["red","blank"]}).pretty();
+
+db.inventory.find({tags:["blank","red"]}).pretty();
+
+//contains all elements
+db.inventory.find({tags:{$all:["red","blank"]}}).pretty();
+
+//Query an Array for an Element
+
+//atleast one element match
+db.inventory.find( { tags: "blank" } ).pretty();
+
+//contains one element $gt 25
+db.inventory.find( { dim_cm: { $gt: 25 } } ).pretty();
+
+//Multiple condition on Array (It does not work well) why ??
+db.inventory.find( { dim_cm: { $gt: 15, $lt: 20 } } ).pretty();
+
+//Multiple condition Array Use $eleMatch
+db.inventory.find( { dim_cm: { $elemMatch: { $gt: 15, $lt: 20 } } } ).pretty();
+db.inventory.find( { dim_cm: { $elemMatch: { $gt: 22, $lt: 30 } } } ).pretty();
+
+//Query on Index Position
+db.inventory.find( { "dim_cm.1": { $gt: 25 } } ).pretty();
+
+//Query on Array Length
+db.inventory.find( { "tags": { $size: 3 } } )
+
+***************************************Query on Embedded Document***************************************
+//db.inventory.drop()
+db.inventory.insertMany( [
+   { item: "journal", instock: [ { warehouse: "A", qty: 5 }, { warehouse: "C", qty: 15 } ] },
+   { item: "notebook", instock: [ { warehouse: "C", qty: 5 } ] },
+   { item: "paper", instock: [ { warehouse: "A", qty: 60 }, { warehouse: "B", qty: 15 } ] },
+   { item: "planner", instock: [ { warehouse: "A", qty: 40 }, { warehouse: "B", qty: 5 } ] },
+   { item: "postcard", instock: [ { warehouse: "B", qty: 15 }, { warehouse: "C", qty: 35 } ] }
+]);
+  
+//Match Exact
+db.inventory.find( { "instock": { warehouse: "A", qty: 5 } } ).pretty()
+
+//change the order
+db.inventory.find( { "instock": { qty: 5, warehouse: "A" } } ).pretty()
+
+//Query on first element of the array
+db.inventory.find( { 'instock.0.qty': { $lte: 20 } } ).pretty()
+
+//If you do not know the position
+db.inventory.find( { 'instock.qty': { $lte: 20 } } )
+
+//Multiple condition on the array (Use $eleMatch)
+db.inventory.find( { "instock": { $elemMatch: { qty: 5, warehouse: "A" } } } )
+
+//one element must match with both condition
+db.inventory.find( { "instock": { $elemMatch: { qty: { $gt: 10, $lte: 20 } } } } )
+
+//element must match with any condition
+db.inventory.find( { "instock.qty": { $gt: 10,  $lte: 20 } } )
+
+//atleat one element match one condition 
+db.inventory.find( { "instock.qty": 5, "instock.warehouse": "A" } )
+
+***************************************projection on query***************************************
+//db.inventory.drop()
+
+db.inventory.insertMany( [
+  { item: "journal", status: "A", size: { h: 14, w: 21, uom: "cm" }, instock: [ { warehouse: "A", qty: 5 } ] },
+  { item: "notebook", status: "A",  size: { h: 8.5, w: 11, uom: "in" }, instock: [ { warehouse: "C", qty: 5 } ] },
+  { item: "paper", status: "D", size: { h: 8.5, w: 11, uom: "in" }, instock: [ { warehouse: "A", qty: 60 } ] },
+  { item: "planner", status: "D", size: { h: 22.85, w: 30, uom: "cm" }, instock: [ { warehouse: "A", qty: 40 } ] },
+  { item: "postcard", status: "A", size: { h: 10, w: 15.25, uom: "cm" }, instock: [ { warehouse: "B", qty: 15 }, { warehouse: "C", qty: 35 } ] }
+]);
+
+//return all documents status="A"
+db.inventory.find( { status: "A" } )
+
+//return specific columns/fields in output
+db.inventory.find( { status: "A" }, { item: 1, status: 1 } )
+
+//return specific columns/fields in output (Supress _id)
+db.inventory.find( { status: "A" }, { item: 1, status: 1, _id: 0 } )
+
+//Exclude fields
+db.inventory.find( { status: "A" }, { status: 0, instock: 0 } )
+
+db.inventory.find( { status: "A" }, { status: 1, instock: 0 } )--false
+
+//Return specific fields in Embedded document
+db.inventory.find({ status: "A" },{ item: 1, status: 1, "size.uom": 1 })
+
+//Suppress Specific Fields in Embedded Documents
+db.inventory.find({ status: "A" },{ "size.uom": 0 })
+
+//Restrict No elements from the array
+db.inventory.find( { status: "A" }, { name: 1, status: 1, instock: { $slice: -1 } } )
+
+***************************************cheking for null on query***************************************
+//db.inventory.drop()
+db.inventory.insertMany([
+   { _id: 1, item: null },
+   { _id: 2 }
+]) 
+
+//check null condition
+db.inventory.find( { item: null } )
+
+//check for null (right way)
+db.inventory.find( { item : { $type: 10 } } )
+
+//check field is exist or not
+db.inventory.find( { item : { $exists: false } } )
+
+***************************************Update Documents************************************************
+//db.inventory.drop()
+
+db.inventory.insertMany( [
+   { item: "canvas", qty: 100, size: { h: 28, w: 35.5, uom: "cm" }, status: "A" },
+   { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "mat", qty: 85, size: { h: 27.9, w: 35.5, uom: "cm" }, status: "A" },
+   { item: "mousepad", qty: 25, size: { h: 19, w: 22.85, uom: "cm" }, status: "P" },
+   { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "P" },
+   { item: "paper", qty: 100, size: { h: 8.5, w: 11, uom: "in" }, status: "D" },
+   { item: "planner", qty: 75, size: { h: 22.85, w: 30, uom: "cm" }, status: "D" },
+   { item: "postcard", qty: 45, size: { h: 10, w: 15.25, uom: "cm" }, status: "A" },
+   { item: "sketchbook", qty: 80, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "sketch pad", qty: 95, size: { h: 22.85, w: 30.5, uom: "cm" }, status: "A" }
+]);
+
+//Update Single Document
+Syntax:
+db.collection.updateOne(
+   <filter>,
+   <update>,
+   {
+     upsert: <boolean>,
+     writeConcern: <document>,
+     collation: <document>
+   }
+)
+
+//points to remember
+-->Use Update Operators such as $set, $unset, or $rename.
+-->By default upsert is set to false
+-->upsert-->insert(No document match by filter)-->update(if match found)
+-->writeconcern-->we generally set it at application level
+
+//Capped Collection
+If an update operation changes the document size, the operation will fail.
+
+//partial update single document
+
+db.inventory.findOne({item: "paper"});
+
+db.inventory.find({item: "paper"}).pretty();
+
+db.inventory.updateOne(
+   { item: "paper" },
+   {
+     $set: { "size.uom": "cm", status: "P" },
+     $currentDate: { lastModified: true }
+   }
+)
+
+db.inventory.findOne({"lastModified":ISODate("2017-12-12T01:44:36.304Z")})
+
+ISODate("2017-12-12T01:44:36.304Z")
+
+//partial update multiple document
+db.inventory.find({"qty": { $lt: 50 }});
+
+db.inventory.updateMany(
+   { "qty": { $lt: 50 } },
+   {
+     $set: { "size.uom": "in", status: "P" },
+     $currentDate: { lastModified: true }
+   }
+)
+
+//syntax for replaceOne command
+db.collection.replaceOne(
+   <filter>,
+   <replacement>,
+   {
+     upsert: <boolean>,
+     writeConcern: <document>,
+     collation: <document>
+   }
+)
+
+//Replace Single Document (except _id replace entire conent)
+db.inventory.findOne({ item: "paper" })
+
+db.inventory.replaceOne(
+   { item: "paper" },
+   { item: "paper", instock: [ { warehouse: "A", qty: 60 }, { warehouse: "B", qty: 40 } ] }
+)
+
+***************************************Delete Documents************************************************
+//db.inventory.drop()
+db.inventory.insertMany( [
+   { item: "journal", qty: 25, size: { h: 14, w: 21, uom: "cm" }, status: "A" },
+   { item: "notebook", qty: 50, size: { h: 8.5, w: 11, uom: "in" }, status: "P" },
+   { item: "paper", qty: 100, size: { h: 8.5, w: 11, uom: "in" }, status: "D" },
+   { item: "planner", qty: 75, size: { h: 22.85, w: 30, uom: "cm" }, status: "D" },
+   { item: "postcard", qty: 45, size: { h: 10, w: 15.25, uom: "cm" }, status: "A" },
+]);
+
+Syntax:
+db.collection.deleteMany(
+   <filter>,
+   {
+      writeConcern: <document>,
+      collation: <document>
+   }
+)
+
+//To Remove all documents
+db.inventory.deleteMany({})
+
+//To Remove all documents which matches the condition
+db.inventory.deleteMany({ status : "A" })
+
+//To Remove single document
+db.inventory.deleteOne( { status: "D" } )
+
+***************************************Bulk Write Operations*******************************************
+//Bulk write operations
+-->MongoDB provides clients the ability to perform write operations in bulk
+-->Bulk write operations affect a single collection
+-->MongoDB allows applications to determine the acceptable level of acknowledgement required for bulk write operations.
+
+db.characters.insert([
+{ "_id" : 1, "char" : "Brisbane", "class" : "monk", "lvl" : 4 },
+{ "_id" : 2, "char" : "Eldon", "class" : "alchemist", "lvl" : 3 },
+{ "_id" : 3, "char" : "Meldane", "class" : "ranger", "lvl" : 3 }]);
+
+db.characters.bulkWrite(
+      [
+         { insertOne :
+            {
+               "document" :
+               {
+                  "_id" : 4, "char" : "Dithras", "class" : "barbarian", "lvl" : 4
+               }
+            }
+         },
+         { insertOne :
+            {
+               "document" :
+               {
+                  "_id" : 5, "char" : "Taeln", "class" : "fighter", "lvl" : 3
+               }
+            }
+         }
+	]);
+
+
+db.characters.bulkWrite(
+      [
+	{ updateOne :
+            {
+               "filter" : { "char" : "Eldon" },
+               "update" : { $set : { "status" : "Critical Injury" } }
+            }
+         }
+]);
+
+db.characters.bulkWrite(
+[
+{ deleteOne :
+            { "filter" : { "char" : "Brisbane"} }
+         },
+         { replaceOne :
+            {
+               "filter" : { "char" : "Meldane" },
+               "replacement" : { "char" : "Tanys", "class" : "oracle", "lvl" : 4 }
+            }
+         }]);
+
+db.characters.bulkWrite(
+      [
+         { insertOne :
+            {
+               "document" :
+               {
+                  "_id" : 4, "char" : "Dithras", "class" : "barbarian", "lvl" : 4
+               }
+            }
+         },
+         { insertOne :
+            {
+               "document" :
+               {
+                  "_id" : 5, "char" : "Taeln", "class" : "fighter", "lvl" : 3
+               }
+            }
+         },
+         { updateOne :
+            {
+               "filter" : { "char" : "Eldon" },
+               "update" : { $set : { "status" : "Critical Injury" } }
+            }
+         },
+         { deleteOne :
+            { "filter" : { "char" : "Brisbane"} }
+         },
+         { replaceOne :
+            {
+               "filter" : { "char" : "Meldane" },
+               "replacement" : { "char" : "Tanys", "class" : "oracle", "lvl" : 4 }
+            }
+         }
+      ]
+   );
+   
+//Read Concern
+local-->The query returns the instance’s most recent data (Default) (chances to rollback)
+majority-->The query returns most recent data written to majority of members
+(replication.enableMajorityReadConcern configuration)
+linearizable-->same as majority + but addition acknowledgement prior to read operation. 
+There is no chances of rollback
+
+Example
+db.restaurants.find( { _id: 5 } ).readConcern("linearizable").maxTimeMS(10000)
+
+db.runCommand({
+find: "restaurants", filter: { _id: 5 }, readConcern: { level: "linearizable" }, maxTimeMS: 10000
+})
+
+
+
+

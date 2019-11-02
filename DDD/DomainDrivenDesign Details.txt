@@ -1,0 +1,23 @@
+Ubiquitous Language - common language between domain experts and technical experts
+Bounded Context - SubDomains
+	Each bounded context would have its own ubiquitous language and model
+Context Map - relationship between Bounded context
+
+
+Following are the types of relationships that bounded context can have
+====================================================
+Shared Kernel - common libraries used by each BC 
+
+Customer/Supplier - one BC using the service of other BC and therefore being a stakeholder of the other
+
+Open Host Service - BC specifies a protocol by which another BC can use its services
+
+Published Language - Interacting BCs agree on a common language (XML, JSON)
+
+Conformist - One BC using the service of the other BC but is not the stakeholder of the other BC. As such it confirms to the protocols or api provided by that BC
+
+Anti corruption layer - One BC using the service of the other BC but is not the stakeholder of the other BC. It aims to minimise the impact from changes in the BC it depends on by introducing a set of adaptors.
+
+Separate ways
+
+

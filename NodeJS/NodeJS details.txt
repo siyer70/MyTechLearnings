@@ -1,0 +1,25 @@
+https://facebook.github.io/create-react-app/docs/getting-started
+
+https://facebook.github.io/create-react-app/docs/deployment
+
+
+npm start
+
+npm run build
+
+npm install -g serve
+
+(-l option allows you to specify the port on which it listens)
+serve -s build -l 4000
+
+
+https://tecadmin.net/install-latest-nodejs-npm-on-ubuntu/
+
+
+https://tecadmin.net/install-nodejs-with-nvm/
+
+
+https://scotch.io/@micwanyoike/how-to-add-fonts-to-a-react-project
+
+https://blog.imagekit.io/how-to-deliver-responsive-images-to-browsers-across-multiple-devices-30cfae17390e
+

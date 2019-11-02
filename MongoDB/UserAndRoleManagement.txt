@@ -1,0 +1,146 @@
+//Manage Role (KillOp and CurrentOp)
+use admin
+db.createRole(
+   {
+     role: "manageOpRole",
+     privileges: [
+       { resource: { cluster: true }, actions: [ "killop", "inprog" ] },
+       { resource: { db: "", collection: "" }, actions: [ "killCursors" ] }
+     ],
+     roles: []
+   }
+)
+
+//Monitoring Role 
+use admin
+db.createRole(
+   {
+     role: "mongostatRole",
+     privileges: [
+       { resource: { cluster: true }, actions: [ "serverStatus" ] }
+     ],
+     roles: []
+   }
+)
+
+//Drop view of any Database
+use admin
+db.createRole(
+   {
+     role: "dropSystemViewsAnyDatabase",
+     privileges: [
+       {
+         actions: [ "dropCollection" ],
+         resource: { db: "", collection: "system.views" }
+       }
+     ],
+     roles: []
+   }
+)
+
+//Grant a Role
+use reporting
+db.grantRolesToUser( "reportsUser", [ { role: "read", db: "accounts" } ] )
+
+//Revoke a Role
+use reporting
+db.revokeRolesFromUser( "reportsUser", [ { role: "readWrite", db: "accounts" } ] )
+
+//Change Password Custom Data
+use admin
+db.createRole(
+   { role: "changeOwnPasswordCustomDataRole",
+     privileges: [
+        {
+          resource: { db: "", collection: ""},
+          actions: [ "changeOwnPassword", "changeOwnCustomData" ]
+        }
+     ],
+     roles: []
+   }
+)
+
+use nilaptest
+db.createUser(
+   {
+     user:"user123",
+     pwd:"12345678",
+     roles:[ "readWrite"]
+   }
+)
+
+use nilaptest
+db.updateUser(
+   "user123",
+   {
+      pwd: "12345678",
+      customData: { title: "Senior Manager" }
+   }
+)
+
+//create read permission for database
+use nilaptest
+db.createUser({user:"appread",pwd:"12345678",roles:[ "read"]})
+
+//create read permission for database
+use nilaptest
+db.createUser({user:"appreadwrite",pwd:"12345678",roles:[ "readWrite"]})
+
+************Database Administration Roles*******************************
+Role:dbadmin
+collStats,dbStats,find,killCursors,listIndexes,listCollections,dropCollection and createCollection on system.profile only
+
+Role:userAdmin
+changeCustomData,changePassword,createRole,createUser,dropRole,dropUser,grantRole,revokeRole,setAuthenticationRestriction,viewRole,viewUser
+
+Role:dbOwner
+dbadmin,userAdmin,Read,ReadWrite
+
+************Cluster Administration Roles*******************************
+Role:clusterManager
+management and monitoring actions on the the cluster. can access local and config database used for monitoring
+
+Role:clusterMonitor
+Provides read-only access to monitoring tools (monitoring Agent)
+
+Role:hostManager
+Provides the ability to monitor and manage servers
+
+Role:clusterAdmin
+clusterManager,clusterMonitor,hostManager and drop database
+
+
+************Backup Roles*******************************
+Role:backup
+Provides minimal privileges needed for backing up data.
+Opsmanager Backup Agent
+Cloud Manager Backup Agent
+list Collections, list indexes, list databases and so on
+
+Role:restore
+
+************All-Database Roles*************************
+except local and config:
+readAnyDatabase-->includes local and config
+readWriteAnyDatabase-->do not include local and config
+userAdminAnyDatabase-->Provides the same access to user administration operations
+dbAdminAnyDatabase-->Provides the same privileges as dbAdmin on all databases 
+
+************Super User Roles*************************
+root-->readWriteAnyDatabase,dbAdminAnyDatabase,userAdminAnyDatabase,clusterAdmin,restore and backup
+
+************Systen Roles*************************
+__system-->only for internal purpose
+
+use nilaptest
+db.createUser({user:"appcustom",pwd:"12345678",roles:[ "selected_coll"]})
+
+disconnect the session
+
+db.secondcoll.insert({x:3});
+
+db.dropUser("appcustom");
+db.dropRole("selected_coll");
+
+
+

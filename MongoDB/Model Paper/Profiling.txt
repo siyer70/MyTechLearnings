@@ -1,0 +1,75 @@
+Any type of database faces performance issues when data grows. Simple steps like rewriting problematic queries or analyzing/optimizing the database schema can drastically improve the performance of the database
+
+Most of the time, it is the database system which decides how a query will execute.
+how we can use MongoDB query profiler to find slow and resource-intensive queries.
+
+Level 0-->Profiler will not log any data
+Level 1-->Profiler will log only slow operations above some threshold
+Level 2-->Profiler will log all the operations 
+
+db.getProfilingLevel()
+db.getProfilingStatus()
+db.setProfilingLevel(1, 40)
+
+db.system.profile.find().limit(1).pretty()-->
+{
+    "op" : "query", 		--> Type of Operation
+    "ns" : "mydb.Log", 		--> Target Database and collection
+    "query" : {			--> Query field stores the information about the query and result. The result will be truncated if the document size is greater than 50KB
+        "find" : "Log",
+        "filter" : {
+            "EMP_ID" : "01778"
+        }
+    },
+    "keysExamined" : 0,		-->the number of index keys examined by DB to execute the query
+    "docsExamined" : 90022,	-->docsExamined stores the total number of documents examined by the DB
+    "cursorExhausted" : true,   
+    "keyUpdates" : 0,
+    "writeConflicts" : 0,
+    "numYield" : 703,
+    "locks" : {
+        "Global" : {
+            "acquireCount" : {
+                "r" : NumberLong(1408)
+            }
+        },
+        "Database" : {
+            "acquireCount" : {
+                "r" : NumberLong(704)
+            }
+        },
+        "Collection" : {
+            "acquireCount" : {
+                "r" : NumberLong(704)
+            }
+        }
+    },
+    "nreturned" : 60,		--> the number of documents returned by the query
+    "responseLength" : 17676,
+    "protocol" : "op_command",
+    "millis" : 40,		--> Actual time in milliseconds taken by this query to execute
+    "execStats" : {
+        "stage" : "COLLSCAN",
+        "filter" : {
+            "EMP_ID" : {
+                "$eq" : "01778"
+            }
+        },
+        "nReturned" : 60,
+        "executionTimeMillisEstimate" : 30,
+        "works" : 90024,
+        "advanced" : 60,
+        "needTime" : 89963,
+        "needYield" : 0,
+        "saveState" : 703,
+        "restoreState" : 703,
+        "isEOF" : 1,
+        "invalidates" : 0,
+        "direction" : "forward",
+        "docsExamined" : 90022
+    },
+    "ts" : ISODate("2018-09-09T07:24:56.487Z"), --> Ts stores the timestamp of the query
+    "client" : "127.0.0.1",
+    "allUsers" : [ ],
+    "user" : ""
+}

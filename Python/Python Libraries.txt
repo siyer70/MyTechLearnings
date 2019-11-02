@@ -1,0 +1,43 @@
+Python Libraries
+
+Restful Webservice
+-------------------
+Flask
+DJango
+
+Database Libraries (Relational and NOSQL)
+-----------------------------------------
+mysql.connector or sqlite3
+pymongo
+cassandra-driver
+psycopg2
+
+Streaming
+------------
+kafka-python
+
+Messaging
+----------
+pika
+
+Bigdata
+----------
+pyspark
+
+Machine Learning Libraries - pick one (and other related libs)
+--------------------------------------------------------------
+TensorFlow
+Scikit-Learn
+Pandas
+Numpy
+Keras
+PyTorch
+LightGBM
+Eli5
+SciPy
+Theano
+Matplotlib
+
+Natural Language
+NLTK
+

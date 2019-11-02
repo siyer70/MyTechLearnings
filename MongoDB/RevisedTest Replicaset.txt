@@ -1,0 +1,355 @@
+http://venublog.com/2014/05/27/how-to-migrate-to-new-sharded-mongodb-cluster-with-zero-downtime/
+https://github.com/adamobr/mongodb/blob/master/replicate_oplog/replicate.py
+
+step 1: Create directory
+mkdir -p /home/replica1/rs1
+mkdir -p /home/replica1/rs2
+mkdir -p /home/replica1/rs3
+
+step 2: Create Config Directory
+mkdir -p /home/replica1/config
+
+step 3: Create Log Directory
+mkdir -p /home/replica1/log/mongodb/
+
+step 4: Create process id directory
+mkdir -p /home/replica1/processids/
+
+step 5: Create keyfile directory
+mkdir -p /home/replica1/keyfile/
+
+step 6: Making owner mongod for data file and folders
+chown -R mongod.mongod /home/replica1
+chown -R mongodb.mongodb /home/replica1
+
+Step 7: make a keyfile
+openssl rand -base64 756 > /home/replica1/keyfile/mongo.keyfile
+chmod 600 /home/replica1/keyfile/mongo.keyfile
+chown mongod.mongod /home/replica1/keyfile/mongo.keyfile
+chown mongodb.mongodb /home/replica1/keyfile/mongo.keyfile
+
+Step 8:Create a Config File
+vi /home/replica1/config/mongod1.conf
+
+Step 9:Insert config file contents first node
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/replica1/log/mongodb/mongod1.log
+
+storage:
+  dbPath: /home/replica1/rs1/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/replica1/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 10000
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/replica1/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/replica1/config/mongod1.conf
+chown mongodb.mongodb /home/replica1/config/mongod1.conf
+
+Step 10:Insert config file contents second node (vi /home/replica1/config/mongod2.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/replica1/log/mongodb/mongod2.log
+
+storage:
+  dbPath: /home/replica1/rs2/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 10001
+  bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/replica1/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/replica1/config/mongod2.conf
+chown mongodb.mongodb /home/replica1/config/mongod2.conf
+
+Step 11:Insert config file contents third node (vi /home/replica1/config/mongod3.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/replica1/log/mongodb/mongod3.log
+
+storage:
+  dbPath: /home/replica1/rs3/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:k
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/replica1/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 10002
+  bindIp: 127.0.0.1,0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+
+security:
+  keyFile: /home/replica1/keyfile/mongo.keyfile
+replication:
+  replSetName: rstest
+
+chown mongod.mongod /home/replica1/config/mongod3.conf
+chown mongodb.mongodb /home/replica1/config/mongod3.conf
+
+step 12: start three mongodb instances
+/usr/bin/mongod -f /home/replica1/config/mongod1.conf
+/usr/bin/mongod -f /home/replica1/config/mongod2.conf
+/usr/bin/mongod -f /home/replica1/config/mongod3.conf
+
+step 13: connect to mongo --port 10000
+mongo --port 10000
+
+step 14: Initiate Replicaset
+rs.initiate()
+
+use admin
+db.createUser({user:"admin",pwd:"admin",roles:["root"]})
+
+use admin
+db.auth("admin","admin");
+
+step 15: Add another two members
+rs.add("localhost.localdomain:10001");
+rs.add("localhost.localdomain:10002");
+
+step 16: Replicaset Status
+rs.status()
+
+
+use nilaptest
+for(i=0;i<=10;i++){db.firstcoll.insert({firstname:"nilap"+i})};
+
+cd /home/replica1/
+mongodump --host localhost --port 10000 --username admin --password admin --authenticationDatabase admin --oplog --out /home/replica1/backup
+
+use nilaptest
+for(i=11;i<=20;i++){db.firstcoll.insert({firstname:"nilap"+i})};
+
+./dump_oplog_range.sh 'Timestamp(1520904428, 3)' 'Timestamp(1520906919, 10)' '--username=admin --password=admin --host=localhost --port=10000 --authenticationDatabase admin'
+
+use nilaptest
+for(i=21;i<=30;i++){db.firstcoll.insert({firstname:"nilap"+i})};
+
+mongodump --host localhost --port 10000 --username admin --password admin --authenticationDatabase admin --db local --collection oplog.rs - >dump02/oplog.bson
+
+./dump_oplog_range.sh 'Timestamp(1520904428, 3)' 'Timestamp(1521012093, 1)' '--username=admin --password=admin --host=localhost --port=10000 --authenticationDatabase admin'
+
+use nilaptest
+for(i=31;i<=40;i++){db.firstcoll.insert({firstname:"nilap"+i})};
+
+use nilaptest
+for(i=41;i<=50;i++){db.firstcoll.insert({firstname:"nilap"+i})};
+
+
+*****************************************************Replicaset to Test Restore******************************************
+step 1: Create directory
+mkdir -p /home/replica2/rs1
+mkdir -p /home/replica2/rs2
+mkdir -p /home/replica2/rs3
+
+step 2: Create Config Directory
+mkdir -p /home/replica2/config
+
+step 3: Create Log Directory
+mkdir -p /home/replica2/log/mongodb/
+
+step 4: Create process id directory
+mkdir -p /home/replica2/processids/
+
+step 5: Create keyfile directory
+mkdir -p /home/replica2/keyfile/
+
+step 6: Making owner mongod for data file and folders
+chown -R mongod.mongod /home/replica2
+
+Step 7: make a keyfile
+openssl rand -base64 756 > /home/replica2/keyfile/mongo.keyfile
+chmod 600 /home/replica2/keyfile/mongo.keyfile
+chown mongod.mongod /home/replica2/keyfile/mongo.keyfile
+
+Step 8:Create a Config File
+vi /home/replica2/config/mongod1.conf
+
+Step 9:Insert config file contents first node
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/replica2/log/mongodb/mongod1.log
+
+storage:
+  dbPath: /home/replica2/rs1/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/replica2/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 20000
+  bindIp: 127.0.0.1
+
+security:
+  keyFile: /home/replica2/keyfile/mongo.keyfile
+replication:
+  replSetName: rstestdest
+
+chown mongod.mongod /home/replica2/config/mongod1.conf
+
+Step 10:Insert config file contents second node (vi /home/replica2/config/mongod2.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/replica2/log/mongodb/mongod2.log
+
+storage:
+  dbPath: /home/replica2/rs2/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /data/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 20001
+  bindIp: 127.0.0.1
+
+security:
+  keyFile: /home/replica2/keyfile/mongo.keyfile
+replication:
+  replSetName: rstestdest
+
+chown mongod.mongod /home/replica2/config/mongod2.conf
+
+Step 11:Insert config file contents third node (vi /home/replica2/config/mongod3.conf)
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /home/replica2/log/mongodb/mongod3.log
+
+storage:
+  dbPath: /home/replica2/rs3/
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:k
+#  wiredTiger:
+
+# how the process runs
+processManagement:
+  fork: true  # fork and run in background
+#pidFilePath: /home/replica2/processids/mongod1.pid  # location of pidfile
+
+# network interfaces
+net:
+  port: 20002
+  bindIp: 127.0.0.1
+
+security:
+  keyFile: /home/replica2/keyfile/mongo.keyfile
+replication:
+  replSetName: rstestdest
+
+chown mongod.mongod /home/replica2/config/mongod3.conf
+
+step 12: start three mongodb instances
+/usr/bin/mongod -f /home/replica2/config/mongod1.conf
+/usr/bin/mongod -f /home/replica2/config/mongod2.conf
+/usr/bin/mongod -f /home/replica2/config/mongod3.conf
+
+step 13: connect to mongo port 20000
+mongo --port 20000
+
+step 14: Initiate Replicaset
+rs.initiate()
+
+use admin
+db.createUser({user:"admin",pwd:"admin",roles:["root"]})
+
+use admin
+db.auth("admin","admin");
+
+step 15: Add another two members
+rs.add("localhost.localdomain:20001");
+rs.add("localhost.localdomain:20002");
+
+step 16: Replicaset Status
+rs.status()
+
+--backup path ==> /home/replica1/backup
+mongorestore --username=admin --password=admin --host=localhost --port=20000 --authenticationDatabase admin --drop --oplogReplay /home/replica1/backup/
+
+check replicaset2 data is recovered or not (firstcoll must contain nilap0 to nilap10)
+
+mongorestore --username=admin --password=admin --host=localhost --port=20000 --authenticationDatabase admin --oplogReplay /home/replica1/dump01
+
+check replicaset2 data is recovered or not (firstcoll must contain nilap11 to nilap20)
+
+mongorestore --username=admin --password=admin --host=localhost --port=20000 --authenticationDatabase admin --oplogReplay /home/replica1/dump02
+check replicaset2 data is recovered or not (firstcoll must contain nilap21 to nilap30)
+
+mongorestore --username=admin --password=admin --host=localhost --port=20000 --authenticationDatabase admin --oplogReplay /home/replica1/dump03
+check replicaset2 data is recovered or not (firstcoll must contain nilap31 to nilap40)
+
+********************************Restore in Standalone Instance*******************************************************************
+
+mongorestore --username=admin --password=admin --host=localhost --authenticationDatabase admin --drop --oplogReplay "F:\MongoDB Backup\backup"
+
+mongorestore --username=admin --password=admin --host=localhost --authenticationDatabase admin --oplogReplay "F:\MongoDB Backup\dump01"
+
+mongorestore --username=admin --password=admin --host=localhost --authenticationDatabase admin --oplogReplay "F:\MongoDB Backup\dump02"
+
+mongorestore --username=admin --password=admin --host=localhost --authenticationDatabase admin --oplogReplay "F:\MongoDB Backup\dump03"

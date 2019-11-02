@@ -1,0 +1,41 @@
+- NoSQL DB
+- no rigid schema
+- sparsely populated tables
+	- with billion of rows
+	- thousands of columns
+	- petabytes of data
+- fully managed service (no need to configure and tune it)
+- some think of Bigtable as persistent hash tables
+- ideal for storing large amounts of data with low latency
+- supports high throughput - both read and write
+	- so good choice for both operational and analytical applications eg:
+		- IoT
+		- user analytics
+		- financial data analysis
+- same open source API as HBase
+	- Portability of applications between HBase and Bigtable
+- behind the scene, bigtable manages the following for you:
+	- adding machine count and rebalancing the data
+	- upgrades and restarts transparently
+	- all of the above without any downtime
+	- data is encrypted in flight and at rest
+	- IAM permissions to control who has access to data
+- it is the same database that powers Google's core services such as
+	- Search
+	- Analytics
+	- Maps
+	- GMail
+- part of GCP eco system
+- data can be read and written to bigtable via
+	- managed vms
+	- HBase Rest Server
+	- Java Server using HBase client
+- data can also be streamed through popular streaming frameworks e.g:
+	- Google Cloud Dataflow Streaming
+	- Spark Streaming
+	- Storm
+- data can also be read and written to using Batch processes such as
+	- Hadoop Map Reduce
+	- Dataflow
+	- Spark
+

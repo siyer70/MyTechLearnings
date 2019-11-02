@@ -1,0 +1,586 @@
+Indexing 
+-Indexes support the efficient resolution of queries
+-Without Indexes it performs full collection scan for query
+-When data is small than database is efficient without indexes
+-Indexes are special data structures, It performs search faster from collection. 
+-It does not require full collection scan
+-It can be on single field or mutliple fields
+
+db.col.createIndex({"key":"value"},{Options});
+
+Parameters
+background: boolean
+unique: boolean
+name: IndexName
+partialFilterExpression: index on few documents
+sparse: If field is exist then it provides entry in document
+
+db.col.createIndex({"b":1},{sparse:true}); 1-Asc, -1=Des
+{a:1,b:1}
+-->{a:2}
+-->{a:3}
+{a:4,b:5}
+
+expireAfterSeconds: numberOfSeconds (365*24*3600)
+storageEngine: <storage engine options)
+
+//single index
+for (i=0; i<1000000; i++) {
+db.users.insert(
+{"i" : i,"username" : "user"+i,"age" : Math.floor(Math.random()*120),"created" : new Date()});
+}
+
+//create Index on users
+db.users.createIndex({"username" : 1})
+
+//create Index
+db.users.createIndex({"age" : 1, "username" : 1})
+
+//See Indexes on collection
+db.collection.getIndexes();
+db.users.getIndexes();
+
+//Check the query execution
+db.users.find({"username" : "user101"}).explain()
+db.users.createIndex({"username" : 1},{background:true,unique:true})
+db.users.find({"username" : "user101"}).explain()
+
+//sort command
+db.users.find().sort({"age" : 1, "username" : 1})
+db.users.find({"age" : 21}).sort({"username" : -1})
+
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" :1})
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" : 1}).explain()
+
+db.users.createIndex({"username" : 1, "age" : 1})
+
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" : 1}).hint({"username" : 1, "age" : 1}).explain()
+
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" : 1}).hint({"username" : 1, "age" : 1}).explain('executionStats').executionStats.executionTimeMillis
+
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" : 1}).hint({"age" : 1, "username" : 1}).explain('executionStats').executionStats.executionTimeMillis
+
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" : 1}).explain('executionStats')
+
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" : 1}).limit(1000).hint({"age" : 1, "username" : 1}).explain('executionStats')
+db.users.find({"age" : {"$gte" : 21, "$lte" : 30}}).sort({"username" : 1}).limit(1000).hint({"username" : 1, "age" : 1}).explain('executionStats')
+
+db.users.find({age:21},{"age":1,"username":1}).explain('executionStats').executionStats.executionTimeMillis
+db.users.find({age:21},{"_id":0,"age":1,"username":1}).explain('executionStats').executionStats.executionTimeMillis
+
+//force to use collection scan
+db.users.find({"age":21}).hint({"$natural" : 1})
+
+$exist
+db.users.find({"age":{"$exists":false}})
+db.users.find({"age":{"$exists":true}}).explain('executionStats')
+
+db.users.find({"age":21}).explain('executionStats')
+
+some of the operators are not using indexes 
+$in, $nin, $ are not using indexes effectively
+
+db.users.find({"age" : 47,"username" : {"$gt" : "user5", "$lt" : "user8"}}).explain()
+
+for (i=0; i<1000000; i++) {
+db.foo.insert({x: i, y: i});
+}
+
+for (i=0; i<10000; i++) {
+db.foo.insert({x: i, y: i});
+}
+
+db.foo.createIndex({x:1});
+db.foo.createIndex({y:1});
+
+db.foo.find({"$or" : [{"x" : 123}, {"y" : 456}]}).explain()
+db.foo.find({"x":{$in:[123,456]}}).explain()
+
+db.foo.find({"$or" : [{"x" : 123}, {"y" : 456}]}).explain('executionStats').executionStats.executionTimeMillis
+
+db.foo.find({"x":{$in:[123,456]}}).explain('executionStats').executionStats.executionTimeMillis
+
+
+
+//Another Example
+use indexpractice
+
+//single index
+for(i=1;i<=10;i++){db.col.insert({a:i});}
+db.col.createIndex({a:1});
+
+//Drop Index
+db.col.dropIndex("a_1");
+db.col.dropIndex({a:1});
+
+compound index
+for(i=1;i<=10;i++){db.col.insert({a:i,b:i+1});}
+db.col.createIndex({a:1,b:1});
+db.col.createIndex({a:1});
+creating background index
+db.col.createIndex({a:1},{background:true})
+
+//Single Index
+db.records.insert(
+{
+  "_id": ObjectId("570c04a4ad233577f97dc459"),
+  "score": 1034,
+  "location": { state: "NY", city: "New York" }
+})
+
+db.records.insert(
+{
+  "score": 1025,
+  "location": { state: "CA", city: "City from CA" }
+})
+
+db.records.insert(
+{
+  "score": 1001,
+  "location": { state: "NY", city: "Albany" }
+})
+
+db.records.createIndex({score:1})
+db.records.createIndex({"location.state":1})
+db.records.createIndex({location:1})
+
+//if index is huge amount of data create background index
+db.records.createIndex({score:1},{background:true})
+
+db.records.find( { "location.state": "CA" } )
+db.records.find( "location": { state: "NY", city: "Albany" });
+db.records.find( { "location.city": "Albany", "location.state": "NY" } )
+
+db.records.find({score:2})
+db.records.find({score:{$gt:10}})
+
+db.records.find({score:{$gt:10}}).explain();
+.explain(<verbosity>) - accepted verbosities are {'queryPlanner', 'executionStats', 'allPlansExecution'}
+
+db.records.find({score:{$gt:10},"location.state":"NY"}).explain('queryPlanner');
+db.records.find({score:{$gt:10},"location.state":"NY"}).explain('executionStats');
+
+db.records.find({score:{$gt:10},"location.state":"NY"}).explain('executionStats').executionStats
+
+db.records.find({score:{$gt:10},"location.state":"NY"}).explain('allPlansExecution');
+
+db.col.find({a:10}).explain('allPlansExecution');
+
+db.records.find({score:{$gt:10}}).explain('queryPlanner');
+db.records.find({score:{$gt:10}}).explain('executionStats');
+db.records.find({score:{$gt:10}}).explain('allPlansExecution');
+
+//products
+db.products1.insert({
+ "item": "Banana",
+ "category": ["food", "produce", "grocery"],
+ "location": "4th Street Store",
+ "stock": 4,
+ "type": "cases"
+})
+
+db.products1.createIndex({"item":1,"stock":1})
+db.products1.createIndex({"item":1})
+
+db.products1.find( { item: "Banana" } )
+db.products1.find( { item: "Banana", stock: { $gt: 5 } } )
+
+db.orders1.insert({qty:50, status: "B"})
+
+db.orders1.createIndex({ qty: 1 });
+db.orders1.createIndex({ status: 1, ord_date: -1 })
+
+db.orders1.find({qty:{$gt:10},status:"B"})
+db.orders1.find({qty:{$gt:10},status:"B"}).explain('queryPlanner');
+db.orders1.find({qty:{$gt:10},status:"B"}).explain('executionStats');
+db.orders1.find({qty:{$gt:10},status:"B"}).explain('allPlansExecution');
+
+By default, It is foreground index.It will block all write operations, Example of unique index
+for(i=1;i<=100000;i++){db.col.insert({a:i});}
+db.col.createIndex({a:1},{background:true})
+
+Index with three fields
+for(i=1;i<=10;i++){db.colmany.insert({a:i,b:i,c:i});}
+db.colmany.createIndex({ a: 1 },{background:true,unique:true})
+
+standard practice to build index
+Three member of replicasets
+1.shutdown mongod on secondary 
+2.start mongodb without replicaset option with different port
+3.build the index
+4.stop standalone mongo instance
+5.Again start with replicaset option + default port
+
+db.socialmedia.insert({"name":"nilap",twitter_name:"nilap"});
+db.socialmedia.insert({"name":"prabhu",twitter_name:"prabhu"});
+db.socialmedia.insert({"name":"chetan",twitter_name:"chetan"});
+db.socialmedia.insert({"name":"test1"});
+db.socialmedia.insert({"name":"test2"});
+
+db.socialmedia.createIndex({twitter_name:1},{sparse:true})
+db.socialmedia.find({$and: [{"twitter_name" : "nilap"},{"name":"test1"}]});
+db.socialmedia.find({$or: [{"twitter_name" : "nilap"},{"name":"test1"}]});
+
+db.socialmedia.find({"twitter_name" : "nilap"});
+
+It is generally used together with unique and sparse index both together
+db.sparsetest.insert({a:1, b:5, c:2})
+db.sparsetest.insert({a:8, b:15, c:7})
+db.sparsetest.insert({a:4, b:7})
+db.sparsetest.insert({a:3, b:10})
+
+db.sparsetest.createIndex({c:1}, {unique:true, sparse:true})
+
+Random distribution while sharding
+db.sparsetest.createIndex({_id: "hashed"})
+
+Multikey Index
+-It holds an array value 
+-MongoDB creates an index key for each element of an array 
+-MongoDB Compound index can not be created on multiple fields of an array
+-Multikey indexes cannot be covered query
+
+db.multikey.insert({_id:1,a:[1,2],b:1,category:"A array"})
+db.multikey.insert({_id:2,a: 1,b:[1,2],category:"B array"})
+db.multikey.createIndex({a:1,b:1})
+db.multikey.insert({_id:3,a:[1,2],b:[1,2],category:"A&B array"}) -----> An Error
+
+Query on Array field
+db.inventory.drop();
+db.inventory.insert({ _id: 5, type: "food", item: "aaa", ratings: [ 5, 8, 9 ] });
+db.inventory.insert({ _id: 6, type: "food", item: "bbb", ratings: [ 5, 9 ] });
+db.inventory.insert({ _id: 7, type: "food", item: "ccc", ratings: [ 9, 5, 8 ] });
+db.inventory.insert({ _id: 8, type: "food", item: "ddd", ratings: [ 9, 5 ] });
+db.inventory.insert({ _id: 9, type: "food", item: "eee", ratings: [ 5, 9, 5 ]});
+
+db.inventory.createIndex({ratings:1});
+db.inventory.find({ratings:[5,9]});
+db.inventory.find({ratings:8});
+
+{a:1,b:1,c:-1}
+
+Actual data
+a:1,b:1,c:1,name:"1",other:"1"
+a:2,b:2,c:2,name:"2"
+a:2,b:2,c:10,name:"3"
+a:1,b:2,c:-1,name:"4"
+
+Index
+0005,a:1,b:1,c:1
+0006,a:1,b:2,c:-1
+a:2,b:2,c:10
+a:2,b:2,c:2
+
+Index on Array of Subdocuments for inventory1
+
+db.inventory1.insert({
+  _id: 1,
+  item: "abc",
+  stock: [
+    { size: "S", color: "red", quantity: 25 },
+    { size: "S", color: "blue", quantity: 10 },
+    { size: "M", color: "blue", quantity: 50 }
+  ]
+})
+
+db.inventory1.insert({
+  _id: 2,
+  item: "def",
+  stock: [
+    { size: "S", color: "blue", quantity: 20 },
+    { size: "M", color: "blue", quantity: 5 },
+    { size: "M", color: "black", quantity: 10 },
+    { size: "L", color: "red", quantity: 2 }
+  ]
+})
+
+db.inventory1.insert({
+  _id: 3,
+  item: "ijk",
+  stock: [
+    { size: "M", color: "blue", quantity: 15 },
+    { size: "L", color: "blue", quantity: 100 },
+    { size: "L", color: "red", quantity: 25 }
+  ]
+})
+
+db.inventory1.createIndex({"stock.size":1,"stock.quantity":1})
+db.inventory1.find({"stock.size":"M"})
+db.inventory1.find({"stock.size":"S","stock.quantity":{$gt:20}})
+
+Text Index
+
+mongodb 2.4 introduced text search for experimental base
+
+stop words: Stop words are the irrelevant words that should be filtered out from a text. 
+For example: a, an, the, is, at, which, etc.
+
+Stemming : It is the process of reducing the words to their stem. 
+For example: words like standing, stand, stood, etc. have a common base stand.
+
+scoring : A relative ranking to measure which of the search results is most relevant. 
+
+Alternative solutions for Solr or Elastic Search 
+
+db.messages.insert({"subject":"Joe owns a dog", "content":"Dogs are man's best friend", "likes": 60, "year":2015, "language":"english"}) 
+db.messages.insert({"subject":"Dogs eat cats and dog eats pigeons too", "content":"Cats are not evil", "likes": 30, "year":2015, "language":"english"}) 
+db.messages.insert({"subject":"Cats eat rats", "content":"Rats do not cook food", "likes": 55, "year":2014, "language":"english"}) 
+db.messages.insert({"subject":"Rats eat Joe", "content":"Joe ate a rat", "likes": 75, "year":2014, "language":"english"})
+
+db.messages.createIndex({"subject":"text"})
+
+relavent search on the upper side
+db.messages.find({$text: {$search: "dogs"}}, {score: {$meta: "textScore"}}).
+sort({score:{$meta:"textScore"}}).pretty();
+db.messages.createIndex({"subject":"text","content":"text"}) - Does this work ??
+
+db.messages.dropIndex("subject_text") 
+db.messages.createIndex({"subject":"text","content":"text"})
+
+db.messages.find({$text: {$search: "rat"}}, {score: {$meta: "textScore"}}).
+sort({score:{$meta:"textScore"}}).pretty()
+
+db.messages.insert({"subject":"Birds can cook", "content":"Birds do not eat rats",
+ "likes": 12, "year":2013, location: "Chicago", "language":"english"})
+ 
+ db.messages.insert({"subject":"cooking test", "content":"Birds do not eat rats",
+ "likes": 12, "year":2013, location: "Chicago", "language":"english"})
+
+db.messages.createIndex({"$**": "text"})
+
+db.messages.find({$text: {$search: "chicago"}},{score: {$meta: "textScore"}}).
+sort({score:{$meta:"textScore"}})
+
+Phrase Search
+
+Logical OR
+db.messages.find({$text: {$search: "smart birds who cook"}}, {score: {$meta: "textScore"}}).
+sort({score:{$meta:"textScore"}}).pretty()
+
+db.messages.find({$text: {$search: "bir"}}, {score: {$meta: "textScore"}}).
+sort({score:{$meta:"textScore"}}).pretty()
+
+Logical AND
+db.messages.find({$text: {$search: "\"cook food\""}}, {score: {$meta: "textScore"}}).
+sort({score:{$meta:"textScore"}})
+
+db.messages.insert({"subject" : "Cats eat rats", "content" : "Rats do not cook", 
+"likes" : 55, "year" : 2014, "language" : "english" })
+
+db.messages.find({$text: {$search: "\"cook food\""}}, {score: {$meta: "textScore"}}).
+sort({score:{$meta:"textScore"}})
+
+db.messages.find({$text: {$search: "dogs who cats dont eat ate rats \"dogs eat\" -friends"}}, 
+{score: {$meta: "textScore"}}).sort({score:{$meta:"textScore"}}).explain(true)
+
+db.messages.createIndex( {"$**": "text"}, {"weights": { subject: 3, content:1 }} )
+
+db.messages.find({$text:{$search:"cook"}},{score:{$meta:"textScore"}}).
+sort({score:{$meta:"textScore"}})
+
+db.userinfo.insert({"content":"abc","users":{"comments":"abc comment","profiles":"abc profile"}});
+db.userinfo.insert({"content":"def","users":{"comments":"def comment","profiles":"def profile"}});
+db.userinfo.insert({"content":"ghi","users":{"comments":"ghi comment","profiles":"ghi profile"}});
+db.userinfo.insert({"content":"abc test","users":{"comments":"abc test2 comment",
+"profiles":"abc test1 profile"}});
+
+db.userinfo.createIndex({content: "text","users.comments": "text","users.profiles": "text"})
+db.userinfo.createIndex({"content": "text","users.comments": "text","users.profiles": "text"},
+   {
+     weights: {"content": 10,"users.comments": 5,"users.profiles": 3},
+     name: "Nilap Index"
+   }
+)
+
+db.userinfo.find({"content":"abc"}) --
+db.userinfo.find({"content":"ABC"})
+db.userinfo.find({$text:{$search:"abc"}})
+db.userinfo.find({$text:{$search:"ABC"}})
+db.userinfo.find({$text:{$search:"ABC",$caseSensitive: true}})
+db.userinfo.find({$text:{$search:"ABC",$caseSensitive: false}})
+db.userinfo.find({$text:{$search:"\"abc\""}})
+db.userinfo.find({$text:{$search:"\"test\""}})
+
+
+db.userinfo.find({$text:{$search:"abc",$language:"english"}})
+db.userinfo.find({$text:{$search:"abc",$language:"nl"}})
+
+
+To limit number of entries to be scanned
+
+db.inventory2.insert({_id: 1, dept: "tech", description: "lime green computer"});
+db.inventory2.insert({_id: 2, dept: "tech", description: "wireless red mouse"});
+db.inventory2.insert({ _id: 3, dept: "kitchen", description: "green placemat" });
+db.inventory2.insert({ _id: 4, dept: "kitchen", description: "red peeler" });
+db.inventory2.insert({ _id: 5, dept: "food", description: "green apple" });
+db.inventory2.insert({ _id: 6, dept: "food", description: "red potato" });
+
+db.inventory2.find( { dept: "kitchen", $text: { $search: "green" } } )
+db.inventory2.createIndex({dept:1,description:"text"})
+db.inventory2.find( { dept: "kitchen", $text: { $search: "green" } } )
+
+Geospatial Indexes
+It uses GeoJson Objects 
+
+Point:{type:"Point",coordinates:[40,5]}
+Line:{type:"LineString",coordinates:[[40,5],[41,6]]}
+polygone with Single String:{type:"Polygon",coordinates:[[[0,0],[3,6],[6,1],[0,0]]]}
+https://docs.mongodb.com/manual/reference/geojson/ (many GeoJson Objects)
+
+//2dsphere Index 
+A 2dsphere index supports queries that calculate geometries on an earth-like sphere.
+2dsphere index supports all MongoDB geospatial queries: queries for inclusion, intersection and proximity.
+
+db.places.insert({loc:{type:"Point",coordinates:[-73.97,40.77]},name:"Central Park",category:"Parks"})
+db.places.insert({loc:{type:"Point",coordinates:[-73.88,40.78]},name:"La Guardia Airport",category : "Airport"})
+db.places.insert({loc:{type:"Point",coordinates:[0,1]},name:"Test",category:"Test"})
+db.places.insert({loc:{type:"Point",coordinates:[0,0]},name:"Test1",category:"Test1"})
+
+single and compound index
+db.places.createIndex({loc:"2dsphere"})
+db.places.createIndex({loc:"2dsphere",category:-1,name:1})
+db.places.createIndex({category:1,loc:"2dsphere"})
+
+db.places.find({loc:{$geoWithin:{$geometry:{type:"Polygon",coordinates:[[[0,0],[-73.88,40.78],[6,1],[0,0]]]}}}})
+db.places.find({loc:{$geoWithin:{$geometry:{type:"Polygon",coordinates:[[[0,0],[-73.97,40.77],[6,1],[0,0]]]}}}})
+db.places.find({loc:{$geoWithin:{$geometry:{type:"Polygon",coordinates:[[[0,0],[3,6],[6,1],[0,0]]]}}}})
+
+db.places.find({loc:{$geoIntersects:{$geometry:{type:"Polygon",coordinates:[[[0,0],[-73.97,40.77],[6,1],[0,0]]]}}}})
+db.places.find({loc:{$geoIntersects:{$geometry:{type:"Polygon",coordinates:[[[0,0],[3,6],[6,1],[0,0]]]}}}})
+
+geoNear Command and $geoNear pipeline stage require that collection have most only one 2dindex.
+db.places.dropIndexes();
+db.places.createIndex({loc:"2dsphere"})
+db.runCommand({geoNear:"places",near:{type:"Point",coordinates:[-74.97,41.77]},spherical:true})
+
+db.places.find({loc:{$geoWithin:{$centerSphere:[[-88,30],40000/3963.2]}}})
+
+Create 2dIndex
+db.collection.createIndex({<location field>:"2d",<additional field>:<value>},{<index-specification options>})
+
+Points within a Shape Defined on a Flat Surface
+db.<collection>.find({<location field>:{$geoWithin:{$box|$polygon|$center:<coordinates>}}})
+
+db.geoplaces.insert({loc:[1,5]});
+db.geoplaces.insert({loc:[-1,-1]});
+db.geoplaces.insert({loc:[5,5]});
+
+db.geoplaces.createIndex({"loc":"2d"})
+db.geoplaces.find({loc:{$geoWithin:{$box:[[0,0],[100,100]]}}})
+
+db.geoplaces.find({loc:{$geoWithin:{$center:[[5,5],10]}}})
+db.geoplaces.find({loc:{$geoWithin:{$center:[[-74,40.74],10]}}})
+
+db.geoplaces.find({loc:{$geoWithin:{$centerSphere:[[5,5],10/3963.2]}}})
+db.geoplaces.find({loc:{$geoWithin:{$centerSphere:[[88,30],10/3963.2]}}})
+
+db.geoplaces.find({loc:{$near:[100,100]}})
+db.geoplaces.find({loc:{$near:[5,5]}})
+db.geoplaces.find({loc:{$near:[-1,-1]}})
+
+db.runCommand({geoNear:"geoplaces",near:[-1,-1]})
+db.places.find({loc:{$geoWithin:{$center:[[-74,40.74],10]}}})
+
+//geoHaystack Indexes
+A geoheystack index is a special index that optimized to return results over small areas.
+geoHaystack indexes improve performance on queries that use flat geometry
+2dsphere index is better option than heystack index
+requires two fields in index, first one will be location field and second field will be 
+each bucket in geoHaystack index contains all the documents within specified proximity to given longitude and lattitude
+
+
+//To build a haystack index, use the following syntax
+db.testheystackIndex.createIndex({<location field>:"geoHaystack",<additional field>:1},{bucketSize:<bucket value>})
+
+db.testheystackIndex.insert({_id:100,pos:{lng:126.9,lat:35.2},type:"restaurant"})
+db.testheystackIndex.insert({_id:200,pos:{lng:127.5,lat:36.1},type:"restaurant"})
+db.testheystackIndex.insert({_id:300,pos:{lng:128.0,lat:36.7},type:"national park"})
+
+db.testheystackIndex.createIndex({pos:"geoHaystack",type:1},{bucketSize:1})
+
+db.runCommand({geoSearch:"testheystackIndex",search:{type:"restaurant"},near:[125.9,37.1],maxDistance:10})
+
+//TTL Index
+db.eventlog.createIndex({"lastModifiedDate":1},{expireAfterSeconds:3600})
+
+//Partial Index (It can be also created as unique index)
+db.restaurants.createIndex({cuisine:1,name:1},{partialFilterExpression:{rating:{$gt:5}}})
+
+db.restaurants.createIndex({cuisine:1},{partialFilterExpression:{rating:{$gt:5}}})
+db.restaurants.find({cuisine:"Italian",rating:{$gte:8}}) --> Users Index
+db.restaurants.find({cuisine:"Italian",rating:{$lt:8}})----> Not Using Index
+
+mongoimport d:\restaurants.json -c restaurants -db nilaptest
+
+mongoimport --db nilaptest --collection restaurants --file "d:\restaurants.json"
+mongoimport --db nilaptest --collection neighborhoods --file "d:\neighborhoods.json"
+
+db.restaurants.createIndex({location:"2dsphere"})
+db.neighborhoods.createIndex({geometry:"2dsphere"})
+
+db.restaurants.findOne()
+db.neighborhoods.findOne()
+
+db.neighborhoods.findOne({geometry:{$geoIntersects:{$geometry:{type:"Point",coordinates:[-73.93414657,40.82302903]}}}})
+
+finding restaurant within neighbourhood
+var neighborhood = db.neighborhoods.findOne( { geometry: { $geoIntersects: { $geometry: { type: "Point", coordinates: [ -73.93414657, 40.82302903 ] } } } } )
+db.restaurants.find( { location: { $geoWithin: { $geometry: neighborhood.geometry } } } ).count()
+
+
+Find restaurants within distance
+All Restaurants within five miles of the user
+db.restaurants.find({location:{$geoWithin:{$centerSphere:[[-73.93414657,40.82302903 ],5/3963.2]}}})
+
+All Restaurants within five miles nearest to farthest
+var METERS_PER_MILE = 1609.34
+db.restaurants.find({location:{$nearSphere:{$geometry:{type:"Point",coordinates:[-73.93414657,40.82302903]},$maxDistance:5*METERS_PER_MILE}}})
+
+https://code.tutsplus.com/tutorials/full-text-search-in-mongodb--cms-24835
+
+db.system.profile.find({"ns":"tracker_production.requests"}).count();
+db.system.profile.find({"ns":"tracker_production.requests","op":"insert"}).count();
+db.system.profile.find({"ns":"tracker_production.system.profile"}).count();
+
+db.system.profile.find({"ns":"tracker_production.requests"})
+
+db.system.profile.find({"ns":"tracker_production.requests",})
+db.system.profile.distinct({"op"},{"ns":"tracker_production.requests"})
+
+
+db.system.profile.find({"ns":"tracker_production.requests",op:"insert","activity.assigned_date":"2017-09-07"}).count()
+db.system.profile.find({"ns":"tracker_production.requests",op:"query","activity.assigned_date":"2017-09-07"}).count()
+
+
+db.system.profile.find({op:"insert"})
+
+db.system.profile.find({op:"insert"}).count()
+db.system.profile.find({op:"command"}).count()
+db.system.profile.find({op:"query"}).count()
+
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-07T00:00:00Z")}},{"query.documents":0}).count();--->0
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-08T00:00:00Z")}},{"query.documents":0}).count();--->23131
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-09T00:00:00Z")}},{"query.documents":0}).count();--->(64123-23131)--->40992
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-10T00:00:00Z")}},{"query.documents":0}).count();--->(100956-40992)--->36833
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-11T00:00:00Z")}},{"query.documents":0}).count();--->(176045-134014)--->42031
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-12T00:00:00Z")}},{"query.documents":0}).count();--->(176045-134014)--->42031
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-13T00:00:00Z")}},{"query.documents":0}).count();--->(217942-176045)--->41897
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-14T00:00:00Z")}},{"query.documents":0}).count();--->(256868-217942)--->38926
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-15T00:00:00Z")}},{"query.documents":0}).count();
+
+db.system.profile.find({op:"insert","ts":{$lt:new ISODate("2017-09-07T00:00:00Z")}},{"query.documents":0}).count();
+
+db.system.profile.storageSize()/(1024*1024*1024);
+
+//Profiling Reset
+db.setProfilingLevel(0)
+db.system.profile.drop()
+db.createCollection( "system.profile",{capped:true,size:{4*1024*1024*1024}})
+db.setProfilingLevel(2)
+
+
+
+
+
+
+

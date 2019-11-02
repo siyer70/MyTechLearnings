@@ -1,0 +1,208 @@
+//One to One Relationship with Embedded Document
+{
+   _id: "A001",
+   name: "Mahesh shah",
+   phone: "1234567890"
+}
+{
+   customer_id: "Mahesh",
+   street: "New Ranip",
+   city: "Ahmedabad",
+   state: "GJ",
+   zip: "380007"
+}
+*********************************************************
+{
+   _id: "A001",
+   name: "Mahesh shah",
+   address: {
+              street: "New Ranip",
+              city: "Ahmedabad",
+              state: "GJ",
+   	      zip: "380007"
+            }
+}
+
+
+//One to Many Relationship with Embedded Document
+{
+   _id: "A001",
+   name: "Mahesh shah",
+   addresses: [
+                {
+              	street: "New Ranip",
+              	city: "Ahmedabad",
+              	state: "GJ",
+   	      	zip: "380007"
+            	},
+                {
+                  street: "fruit market",
+                  city: "Valsad",
+                  state: "GJ",
+                  zip: "123456"
+                }
+              ]
+ }
+
+//One to Many Relationship
+{
+   _id: "oreilly",
+   name: "O'Reilly Media",
+   founded: 1980,
+   location: "CA"
+}
+
+{
+   _id: 123456789,
+   title: "MongoDB: The Definitive Guide",
+   author: [ "Kristina Chodorow", "Mike Dirolf" ],
+   published_date: ISODate("2010-09-24"),
+   pages: 216,
+   language: "English",
+   publisher_id: "oreilly"
+}
+
+{
+   _id: 234567890,
+   title: "50 Tips and Tricks for MongoDB Developer",
+   author: "Kristina Chodorow",
+   published_date: ISODate("2011-05-06"),
+   pages: 68,
+   language: "English",
+   publisher_id: "oreilly"
+}
+
+//Model Tree Structures with Parent References
+db.categories.insert( { _id: "MongoDB", parent: "Databases" } )
+db.categories.insert( { _id: "dbm", parent: "Databases" } )
+db.categories.insert( { _id: "Databases", parent: "Programming" } )
+db.categories.insert( { _id: "Languages", parent: "Programming" } )
+db.categories.insert( { _id: "Programming", parent: "Books" } )
+db.categories.insert( { _id: "Books", parent: null } )
+
+db.categories.findOne({ _id: "MongoDB" }).parent
+db.categories.createIndex({ parent: 1 })
+db.categories.find({parent: "Databases"})
+
+//Model Tree Structures with Child References
+db.categories.insert( { _id: "MongoDB", children: [] } )
+db.categories.insert( { _id: "dbm", children: [] } )
+db.categories.insert( { _id: "Databases", children: [ "MongoDB", "dbm" ] } )
+db.categories.insert( { _id: "Languages", children: [] } )
+db.categories.insert( { _id: "Programming", children: [ "Databases", "Languages" ] } )
+db.categories.insert( { _id: "Books", children: [ "Programming" ] } )
+
+db.categories.findOne({_id: "Databases"}).children
+db.categories.createIndex({ children: 1 })
+db.categories.find({children: "MongoDB"})
+
+//Model Tree Structures with an Array of Ancestors
+db.categories.insert( { _id: "MongoDB", ancestors: [ "Books", "Programming", "Databases" ], parent: "Databases" } )
+db.categories.insert( { _id: "dbm", ancestors: [ "Books", "Programming", "Databases" ], parent: "Databases" } )
+db.categories.insert( { _id: "Databases", ancestors: [ "Books", "Programming" ], parent: "Programming" } )
+db.categories.insert( { _id: "Languages", ancestors: [ "Books", "Programming" ], parent: "Programming" } )
+db.categories.insert( { _id: "Programming", ancestors: [ "Books" ], parent: "Books" } )
+db.categories.insert( { _id: "Books", ancestors: [ ], parent: null } )
+
+db.categories.findOne( { _id: "MongoDB" } ).ancestors
+db.categories.createIndex( { ancestors: 1 } )
+db.categories.find( { ancestors: "Programming" } )
+
+//Tree Structures with Materialized Paths
+db.categories.insert( { _id: "Books", path: null } )
+db.categories.insert( { _id: "Programming", path: ",Books," } )
+db.categories.insert( { _id: "Databases", path: ",Books,Programming," } )
+db.categories.insert( { _id: "Languages", path: ",Books,Programming," } )
+db.categories.insert( { _id: "MongoDB", path: ",Books,Programming,Databases," } )
+db.categories.insert( { _id: "dbm", path: ",Books,Programming,Databases," } )
+
+db.categories.find().sort({ path: 1 })
+db.categories.find({ path: /,Programming,/ })
+db.categories.find({ path: /^,Books,/ })
+db.categories.createIndex({ path: 1 })
+
+//Tree Structures with Nested Sets
+db.categories.insert( { _id: "Books", parent: 0, left: 1, right: 12 } )
+db.categories.insert( { _id: "Programming", parent: "Books", left: 2, right: 11 } )
+db.categories.insert( { _id: "Languages", parent: "Programming", left: 3, right: 4 } )
+db.categories.insert( { _id: "Databases", parent: "Programming", left: 5, right: 10 } )
+db.categories.insert( { _id: "MongoDB", parent: "Databases", left: 6, right: 7 } )
+db.categories.insert( { _id: "dbm", parent: "Databases", left: 8, right: 9 } )
+
+var databaseCategory = db.categories.findOne( { _id: "Databases" } );
+db.categories.find( { left: { $gt: databaseCategory.left }, right: { $lt: databaseCategory.right } } );
+
+//Model Data for Atomic Operations
+db.books.drop();
+db.books.insert(
+{
+    _id: 123456789,
+    title: "MongoDB: The Definitive Guide",
+    author: [ "Kristina Chodorow", "Mike Dirolf" ],
+    published_date: ISODate("2010-09-24"),
+    pages: 216,
+    language: "English",
+    publisher_id: "oreilly",
+    available: 3,
+    checkout: [ { by: "joe", date: ISODate("2012-10-15") } ]
+})
+
+db.books.updateOne (
+   { _id: 123456789, available: { $gt: 0 } },
+   {
+     $inc: { available: -1 },
+     $push: { checkout: { by: "abc", date: new Date() } }
+   }
+)
+
+//Model Data to Support Keyword Search
+db.volumes.drop();
+db.volumes.insert(
+{ title : "Moby-Dick" ,
+  author : "Herman Melville" ,
+  published : 1851 ,
+  ISBN : 0451526996 ,
+  topics : [ "whaling" , "allegory" , "revenge" , "American" ,
+    "novel" , "nautical" , "voyage" , "Cape Cod" ]
+})
+
+db.volumes.createIndex({ topics: 1 })
+db.volumes.findOne({topics : "voyage"})
+
+//Model Monetary Data(Numeric)
+db.clothes.insertMany([
+{ "_id" : 1, "description" : "T-Shirt", "size" : "M", "price" : NumberLong("1999") },
+{ "_id" : 2, "description" : "Jeans", "size" : "36", "price" : NumberLong("3999") },
+{ "_id" : 3, "description" : "Shorts", "size" : "32", "price" : NumberLong("2999") },
+{ "_id" : 4, "description" : "Cool T-Shirt", "size" : "L", "price" : NumberLong("2495") },
+{ "_id" : 5, "description" : "Designer Jeans", "size" : "30", "price" : NumberLong("8000") }
+])
+
+//Save Performs Replacement
+db.clothes.aggregate(
+  [
+    { $match: { price: { $type: "long" }, priceDec: { $exists: 0 } } },
+    {
+      $addFields: {
+        priceDec: {
+          $multiply: [ "$price", NumberDecimal( "0.01" ) ]
+        }
+      }
+    }
+  ]
+).forEach( ( function( doc ) {
+  db.clothes.save( doc ); 
+} ) )
+
+//Model Time Data
+var now = new Date();
+db.data.save({ date: now,
+                offset: now.getTimezoneOffset() });
+
+var record = db.data.findOne();
+var localNow = new Date( record.date.getTime() -  ( record.offset * 60000 ) );
+
+
+
+
+

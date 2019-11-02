@@ -1,0 +1,170 @@
+Question: to limit usage of ram
+Answer: engineConfig:
+        	cacheSizeGB: 40
+
+Question: To see validataion information
+Answer: db.getCollectionInfos({name: "contacts"});
+
+mongod --> It is main process of b. 
+
+Options give below
+ --help
+ --version
+ -f <config file path> or  --config <filename>
+ --verbose (vvvvvv)
+ --port <port>
+ --quiet (Supress the output, Connection open/close and replication activity)
+ --bind_ip (0.0.0.0 to allow every user and by default is localhost since 3.6 version)
+ --ipv6 (disabled by default)
+ --maxConns <number> (maximum number of concurrent connections)
+ --logpath <path> (what if existing log path ?)
+ --logappend (existing log file will be used)
+ --logRotate <string> db.adminCommand({ logRotate: 1 });
+ --keyFile <file>
+ --fork
+ --auth
+ --noscripting
+ --shutdown
+ --enableFreeMonitoring  (db.enableFreeMonitoring() or db.disableFreeMonitoring())
+ --storageEngine string
+ --dbpath <path>
+ --directoryperdb
+ --syncdelay (60 seconds)
+ --journal
+ --journalCommitInterval (100ms)
+ --wiredTigerCacheSizeGB (256MB to 10TB)
+ --replSet <setname>
+ --oplogSize <value> (5% of total and max size 50GB)
+ --configsvr
+ --shardsvr
+ --sslMode <mode>  --sslPEMKeyFile --sslPEMKeyPassword
+ --sslCAFile
+
+mongos(Shard Process)
+
+mongo
+mongo --port 27017
+mongo admin 
+mongo <script file>
+mongo -u <user> -p <pass> --host <host> --port 28015
+mongo --username <user> --password <pass> --host <host> --port 28015 --sslPEMKeyFile <path>  --sslCAFile <path>
+
+mongodump
+-->overwrites existing file if exists
+-->very heavy process affects performance
+--verbose (vvvvvv)
+--quiet
+
+mongodump
+mongodump  --db <dbname> --collection <collectionname>
+mongodump  --db test --excludeCollection=<collectionname> --excludeCollection=<collectionname>
+mongodump --host <hostname> --port <portname> --username user --password "pass" --out <backup path>
+mongodump --gzip --db training
+mongodump --archive=archive.training.gz --gzip --db training
+
+mongodump --port 40000 --username admin --password admin --db nilaptest --collection firstcoll --authenticationDatabase=admin
+
+//shard1,shard2,config
+Backup script on secondary instance
+shell script 00:00 Time
+fyncLock()-->shard1,shard2,config server backup instance
+mongodump -->backup shard1, shard2,config server backup instance
+fyncUnlock()-->
+
+
+rm -rf /data/db
+mkdir -p /data/db
+mongod --dbpath /data/db --port 37017 --logpath /data/db/mongod.log --fork
+mongodump --db training --port 27017 | mongorestore --port 37017
+
+/usr/bin/mongod -f <configfilepath> --repair
+
+mongorestore --collection <collectionname> --db <dbname> dump/
+mongorestore --nsInclude <dbname>.<collectionname> dump/
+mongorestore --nsInclude 'transactions.*' --nsExclude 'transactions.*_dev' dump/
+mongorestore --host <hostname> --port <portname> --username user --password "pass" /opt/backup/mongodump-2011-10-24
+
+bsondump:
+mongodump  --db training
+-->bsondump users.bson 
+-->bsondump --outFile users.json users.bson
+-->bsondump --type=debug collection.bson
+
+mongoexport
+mongoexport --db training --collection testpop --out testpop_copy.json
+mongoimport --db training --collection testpop_copy testpop_copy.json
+
+--readPreference (you can specify read preference)
+mongoexport --db training --collection users --skip 999999 --out users.json
+mongoexport --db training --collection users --limit 5 --out users.json   
+
+mongoexport --db training --collection users --sort '{age: 1}' --limit 5  --out users.json
+mongoexport --db training --collection users --sort '{age: -1}' --limit 5  --out users.json
+
+mongoexport --db training --collection users --limit 5 --type=csv --fields username,age --out users.csv
+mongoexport --db training --collection users --limit 5 --type=csv --fields username,age --out users.csv --noHeaderLine
+
+mongoexport --host <hostname> --port 37017 --username <username> --password <password> --collection <collection> --db <dbname> --out file.json
+
+mongoexport --db training --collection users --query '{age: {$eq:100}}' --out users.json
+
+db.people.insert(
+{
+   "_id" : ObjectId("580100f4da893943d393e909"),
+   "name" : "Crystal Duncan",
+   "region" : "United States",
+   "email" : "crystal@example.com"
+});
+
+vi people.json
+
+{
+   "_id" : ObjectId("580100f4da893943d393e909"),
+   "username" : "crystal",
+   "email": "crystal.duncan@example.com",
+   "likes" : [ "running", "pandas", "software development" ]
+}
+
+mongoimport -c people -d training --mode merge --file people.json
+
+db.people.drop();
+
+vi people.json
+
+{
+   "_id" : ObjectId("580100f4da893943d393e909"),
+   "username" : "crystal",   
+   "likes" : [ "running", "pandas", "software development" ]
+}
+
+mongoimport -c people -d training --mode upsert --file people.json
+
+mongostat returns values that reflect the operations over a 1 second period
+
+mongostat -o 'host=H,time=T,version=MongoDB Version'
+mongostat --rowcount 5 -n 5
+mongostat --rowcount 5 -n 10
+
+Inserts/Updates/Query/Delete/getmore-->The number of operations per second.
+dirty-->The percentage of the WiredTiger cache with dirty bytes
+used-->The percentage of the WiredTiger cache that is in use
+flushes-->Journal to disk
+vsize-->virtual memory in megabytes
+res-->resident memory in megabytes
+qrw-->The length of the queue of clients waiting to read data from the MongoDB instance
+arw-->active operations read/write data from the MongoDB instance
+netIn/netOut-->The amount of network traffic, in bytes, received/sent by the MongoDB instance
+
+mongotop-->amount of time mongodb spends on reading and writing
+mongotop n-->it will shows output at regular interval of n seconds
+
+mongoreplay record -i eth0 -e "port 27017" -p ~/recordings/playback
+mongoreplay play -p ~/recordings/playback --host mongodb://192.168.0.4:27018
+
+db.system.profile.find( { ns : 'nilaptest.thirdcoll' } ).pretty()
+db.forthcoll.insert({x:4});
+db.system.profile.find( { ns : 'nilaptest.forthcoll' } ).pretty()
+
+db.oplog.rs.find( { ns : 'nilaptest.forthcoll' } ).pretty()
+
+

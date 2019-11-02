@@ -1,0 +1,84 @@
+1. Suppose you have a collection “sample” composed of only these documents
+
+db.sample.insert({"_id":1 , "person": "Bob", "fruit" : "grape",  "state": "California"})
+db.sample.insert({"_id":2 , "person": "Gary", "fruit" : "tomato",  "state": "California"})
+db.sample.insert({"_id":3,  "person": "Lydia", "fruit": "clive", "state" : "Arkansas"})
+db.sample.insert({"_id":4,  "person": "Lydia", "fruit": "clive", "state" : "Texas"})
+db.sample.insert({"_id":5,  "person": "Lydia", "fruit": "peanut", "state" : "Georgia"})
+db.sample.insert({"_id":6,  "person": "Bob", "fruit": "tomato", "state" : "Wyoming"})
+
+How many documents will be in result set the following aggregation query ? 
+
+db.sample.aggregate( { "$group":  { "_id" : "$state"} } )
+
+Option 1, 2, 3 , 4, 5 
+
+Answer : 5
+
+2. Student collection 
+
+{
+"_id": ObjectId("—"),
+"student_id" : 4,
+"assignment" : 1,
+"score": 18,
+"Subject": "physics",
+"section": 3
+}
+
+Each student document contains the score for a single assignment. A grade for a student in a specific subject is calculated as the average of their assignment scores in that subject,
+
+In this and the two questions that follow, complete the query below to produce an aggregation that will allow you to compare the top student grade in each section of physics
+
+db.students.aggregate(
+{ "$match" : { "subject": "physics" } },
+{ "$group" : { "_id" :  (Part – A ), "avg" : { "$avg" : "$score" } } },
+{ (Part B) : { "_id" : { section : "$_id.section" }, 
+	"best_grade" : { (Part C) : "$avg" } } } )
+
+Part – A  "$student_id", "$assignment", "$score", "$subject",  None of the above   ----------------------> $student_id
+Part – B  "$project", "$group", "$unwind", "$sort", "$match"                       ----------------------> $group 
+Part – C  "$push", "$max", "$count", "$add", "$avg"								   ----------------------> $max		
+
+db.students.insert({"student_id" : 4, "assignment" : 1, "score": 18, "Subject": "physics", "section": 3});
+db.students.insert({"student_id" : 4, "assignment" : 1, "score": 19, "Subject": "physics", "section": 3});
+db.students.insert({"student_id" : 4, "assignment" : 1, "score": 20, "Subject": "physics", "section": 3});
+
+db.students.insert({"student_id" : 5, "assignment" : 1, "score": 28, "Subject": "physics", "section": 3});
+db.students.insert({"student_id" : 5, "assignment" : 1, "score": 29, "Subject": "physics", "section": 3});
+db.students.insert({"student_id" : 5, "assignment" : 1, "score": 30, "Subject": "physics", "section": 3});
+
+db.students.insert({"student_id" : 6, "assignment" : 1, "score": 38, "Subject": "physics", "section": 4});
+db.students.insert({"student_id" : 6, "assignment" : 1, "score": 39, "Subject": "physics", "section": 4});
+db.students.insert({"student_id" : 6, "assignment" : 1, "score": 40, "Subject": "physics", "section": 4});
+
+db.students.aggregate([ 
+{$match:{"Subject":"physics"}},
+{"$group":{"_id":"$student_id","Average":{"$avg":"$score"}}}
+])
+
+6. Consider the stuff collection 
+
+db.stuff.insert({"_id": 1, "x":1, "y": [1,2,3,4,5]});
+db.stuff.insert({"_id": 2, "x":2, "y": [1,2,3,4,5]});
+db.stuff.insert({"_id": 3, "x":3, "y": [1,2,3,4,5]});
+db.stuff.insert({"_id": 4, "x":4, "y": [1,2,3,4,5]});
+db.stuff.insert({"_id": 5, "x":5, "y": [1,2,3,4,5]});
+
+If you perform following aggregation query how many documents will be in the other stuff collection when you are done ? You can assume that the other stuff collection does not have any indexes except for its standard index on _id.
+db.stuff.aggregate([{$unwind:"$y"},{"$project":{x:1,y:1,_id:0}},{$out:"Otherstuff"}]);
+0, 1, 5, 25, The answer depends on the state of the other stuff collection prior to the aggregation query
+
+Answer:25
+
+7.In Mongo 2.6 x, the aggregation pipeline returns 
+
+1)A string, 
+2)None it always creates a new collection, 
+3)An array, 
+4)A document 
+5)A Cursor                               ---------------> Cursor
+
+before 2.6 it returns a single document hence it limits the document size of 16MB
+
+

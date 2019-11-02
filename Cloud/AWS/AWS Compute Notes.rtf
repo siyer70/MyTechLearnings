@@ -1,0 +1,652 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf400
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Menlo-Regular;}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\csgray\c0;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Compute\
+=======\
+\
+EC2\
+- Resizable Compute Capacity\
+- Reduces the time required to obtain and boot new server\
+- virtual machines in the cloud\
+- cap ex vs op ex\
+- pay as you go and pay for what you use\
+- pay less as you use more\
+- pay even less if you reserve capacity\
+- pricing models\
+	- on demand - allows you to pay a fix rate by the hour/second\
+		- use cases \
+			- without any upfront payment and long term commitment\
+			- short term, spiky, unpredictable workloads\
+			- developed or tested for the first time\
+	- reserved - reserved capacity (offer significant discount on the hourly charge - 1/3 year)\
+		- use cases\
+			- steady state or predictable usage\
+			- application that require reserve capacity\
+			- users are able to make upfront payment (for higher discount)\
+		- types\
+			- standard reserve instances (upto 75% discount)\
+				- the more you pay upfront and longer the contract, the higher the discount\
+			- convertible reserve instances (upto 54% discount)\
+				- change the attribute of RI as long as the exchange results in equal or greater value\
+			- scheduled reserve instances\
+				- match your capacity reservation to a predictable recurring schedule (fraction of day/week/month)\
+			\
+	- spot - enables you to bid\
+		- use cases\
+			- applications having flexible start and end times\
+			- applications that are only feasible at very low computing prices\
+			- urgent computing needs for large amounts of additional capacity\
+\
+	- dedicated hosts - Physical EC2 Servers dedicated for your use - allows (Bring Your License)\
+		- use cases\
+			- regulatory requirement (for eg: that may not support multi-tenant virtualisation)\
+			- licensing that does not support multi-tenant or cloud deployment\
+			- can be purchased on-demand (hourly)\
+			- can be purchased as a reservation (with upto 70% off the  on-demand price)\
+\
+- Instance Metadata\
+	- used to get information about an instance\
+	- hit curl command\
+		- curl http://169.254.169.254/latest/user-data (will show bootstrap scripts configured in ec2)\
+		- curl http://169.254.169.254/latest/meta-data (will show list of options that you can use to get metadata)\
+			- for ex: \
+				- local ip, public ipv4 instance id, instance type, security groups, services, hostname, Mac\
+				- metrics, network, placement, profile, reservation-id etc\
+\
+- EC2 with IAM roles\
+	- Roles are far more secure than storing your access key id and secret access key on individual EC2 instances\
+	- Roles are easier to manage\
+	- Instead of using specific IAM user credentials to access AWS resources you can use roles instead\
+		- for example: in AWS CLI - we used AWS configure to configure IAM user credentials for\
+			- accessing resources subsequently with aws CLI - for ex: aws s3 ls\
+	- when using specific services, configure IAM roles with that service\
+		- for example: when launching EC2, you can attach specific IAM role\
+	- Roles are universal - you can use them in any region\
+\
+Popular exam question - you will not charge for the hour in case of spot price if the instance is terminated AWS but will be charged for the hour if you yourself terminated the instance.\
+\
+Elastic Block Storage	\
+	- Virtual Hard Disk in Cloud\
+	- Provides persistent block storage for use with EC2 instances\
+	- Each EBS volume is automatically replicated within its Availability Zone offering high availability and durability\
+	- EBS volume will be in the same AZ where the EC2 instance is placed\
+	- If you delete the EC2 instance, the root volume of the instance will also be deleted automatically\
+	- if there are additional volumes - those will continue  to exist even after the EC2 is deleted\
+	- 5 different types of EBS storage\
+		- General Purpose (SSD)\
+			- Description: General Purpose SSD that balances price and performance for a wide of variety of workloads\
+			- Use cases: Most Workloads\
+			- Max IOPS Volume - 16000\
+			- Volume Size: 1GiB - 16 TiB\
+			- API name: gp2\
+		- Provisioned IOPS (SSD) - io1\
+			- Description: Highest performance SSD designed for mission critical applications\
+			- Use cases: Databases\
+			- Max IOPS Volume - 64000\
+			- Volume Size: 4GiB - 16 TiB\
+			- API name: io1\
+		- Throughput Optimised Hard Disk Drive (Magnetic) - st1\
+			- Description: Low cost HDD volume for frequently accessed, throughput-intensive workloads\
+			- Use cases: Big Data & Data Warehouses\
+			- Max IOPS Volume - 500\
+			- Volume Size: 500GiB - 16 TiB\
+			- API name: st1\
+		- Cold Hard Disk Drive - sc1\
+			- Description: Lowest cost HDD volume designed for less frequently accessed workloads\
+			- Use cases: File Servers\
+			- Max IOPS Volume - 250\
+			- Volume Size: 500GiB - 16 TiB\
+			- API name: sc1\
+		- Magnetic - Standard\
+			- Description: Previous generation HDD\
+			- Use cases: Workloads where data is infrequently accessed (for archiving if Glacier is not used)\
+			- Max IOPS Volume - \
+			- Volume Size: 1GiB - 1 TiB\
+			- API name: standard\
+\
+	- You can change the EBS storage type of the root volume (for eg: From general purpose to provisioned iops)\
+	- You can change the size of the volume on the fly\
+	- You can move the EC2 instance and EBS storage from one AZ / region to other\
+		- Go to the respective volume\
+		- from the Actions menu, select create Snapshot option\
+		- once the snapshot is created, create an AMI (Machine Image) from snapshot (photograph of the disk)\
+		- once an AMI (image) is created, copy AMI image to destination region (only for region movement scenario)\
+		- once you have the AMI (image) in the region, select Launch menu option from that AMI for new EC2 instance \
+		- while creating this new EC2 instance, select the region or specify the AZ where you want to place the EC2\
+	- Snapshots are stored in S3 - Think of snapshots as a photograph of the disk\
+	- in other words, Snapshots are point in time copies of Volumes\
+	- Snapshots are incremental - once the blocks that are changed from previous snapshot are moved to S3\
+	- To create the snapshot of the root EBS volume, stop the instance first (specially for production workload)\
+	- However, you can take a snapshot while the instance is running (the above is just a recommended step)\
+	- AMIs can be created from volume directly (no need to create a snapshot first) and also from snapshot \
+	- All AMI are categorised as either backed by Amazon EBS or backed by Instance store\
+	- EBS vs Instance Store\
+		- You can select your AMIs based on\
+			- Region\
+			- Operating System\
+			- Architecture (32 bit or 64 bit)\
+			- Launch Permissions\
+			- Storage for the Root Device (Root Device Volume)\
+				- EPHEMERAL STORAGE (Instance store v\
+				- EBS Backed Volumes\
+		- For EBS Volumes - The root device for an instance launched from the AMI is an EBS volume\
+			- created from an Amazon EBS snapshot\
+		- For Instance Store Volume - The root device for an instance launched from the AMI 			- is an instance store volume \
+				- created from a template stored in Amazon S3\
+				- Instance store volumes cannot be added after the instance is launched\
+				- If the underlying \
+			-  By default, both ROOT volumes will be deleted on termination\
+			- However - with EBS volumes, you can tell AWS to keep the root device volume\
+\
+	- Encrypting Root Device Volume\
+		- By default, when you launch EC2 instance, root device volumes cannot be encrypted\
+		- The workaround is:\
+			- Create a Snapshot of the unencrypted root device volume\
+			- Create a copy of the Snapshot and select the encrypt option\
+			- Create an AMI from the encrypted snapshot\
+			- Use that AMI to launch new encrypted EC2 instances\
+\
+	- Snapshots of encrypted volumes are encrypted automatically\
+	- Volumes restored from encrypted snapshots are encrypted automatically\
+	- You can share snapshots, but only if there are unencrypted\
+	- These snapshots can be shared with other AWS accounts or made public\
+\
+Load Balancers\
+	- Physical or Virtual device - to help you balance the load\
+	- Types\
+		- Application Load Balancer\
+			- best suited for balancing http or https traffic\
+			- they operate at layer 7 and are application aware (for eg: use Locale based routing)\
+			- you can configure advanced routing request and send specific request to specific web servers\
+			- Requests are routed to target group(s) - you need to first create a target group\
+			- Target Group should associate the instances\
+			- Advance routing can be configured for different path patterns - each going to different target groups\
+		- Network Load Balancer\
+			- best suited for load balancing of TCP traffic where extreme performance is required\
+			- Operating at the connection level (layer 4)\
+			- Capable of handling millions of requests per second while maintaining ultra-low latencies\
+		- Classic Load Balancer\
+			- Legacy Elastic Load Balancer\
+			- Load Balance HTTP/HTTPS applications and use Layer 7\
+				- use specific features such as X-Forwarded and sticky sessions (not application aware)\
+				- X-Forwarded-For is used to know the actual IP of the user from where the request received\
+				- the above is required in case of classic load balancer as it passes its internal ip as the source\
+			- Also be used for strict layer 4 load balancing for applications that rely purely on the TCP protocol\
+			- typically used for simple round robin routing I.e. you don\'92t need to advance routing \
+			- it is cheaper as compared to application load balancers\
+	- you could see http 504 error when your application stops responding (typically means gateway time out)\
+	- in those cases you need to check the cause (for eg: whether the application / database needs to be scaled)\
+	- Instances monitored by ELB are reported as InService or OutOfService\
+	- Health Check check the instance health by talking to it\
+	- Load Balancers have their own DNS name. You are never given an IP address\
+	- Sticky sessions enable your users to stick to the same EC2 instance\
+	- Cross Zone Load Balancing enables you to load balance across multiple availability zones\
+	- Path Patterns\
+		- you can create a listener with rules to forward requests based on the url path (Path Based Routing)\
+		- typically in micro services, you can route traffic to multiple back-end services using path based routing\
+		- you would use application load balancer in this case with target group defined for each service / path\
+	- Popular exam question regarding sticky session \
+		- all requests going to same ec2 instance - answer: disable sticky session\
+	- Popular exam question regarding cross zone load balancing\
+		- two AZs available - route 53 configured to route 100% traffic to LB in one AZ\
+		- other AZ is not getting any traffic - what should you do?\
+		- answer: enable cross zone load balancing\
+	(Read ELB FAQs for Classic Load Balancers)\
+	\
+\
+Placement Groups\
+	Two types and completely opposite to each other\
+	- Clustered Placement Groups\
+		- A clustered placement groups is a grouping of instances within a single availability zone\
+		- recommended for applications that need low network latency, high network throughput or both\
+		- only certain instances can be launched in to a clustered placement group\
+			- Compute Optimised, GPU, Memory Optimised, Storage Optimised\
+		- cannot span multiple availability zone\
+	- Spread Placement Groups\
+		- A spread placement group is a group of instances that are each placed on a distinct underlying hardware\
+		- recommended for applications that have a small number of critical instances that should be kept separate\
+		- it can span across multiple availability zone\
+	- You can\'92t move an existing instance into a placement group. To do that, follow the below\
+		- create an AMI from your existing instance\
+		- Launch a new instance from the AMI into a placement group\
+	- Name must be unique within your AWS account\
+	- AWS recommend homogeneous instances within placement groups\
+	- You can\'92t merge placement groups\
+\
+\
+Lambda\
+	- Serverless architecture\
+	- Is a compute service where you upload your code and create a lambda function \
+	- AWS takes care of provisioning and managing servers for the code that you provided\
+	- You don\'92t have to take care of OS, patching scaling etc\
+	- Where you can use Lambda\
+		- you can use Lambda function as a event driven compute service\
+			- AWS runs your code in response to events (for eg Changes to data in S3/DynamoDB)\
+			- As a compute service to run your code in response to HTTP requests using Amazon API Gateway\
+			- example1 (lambda execution in response to events)\
+				 - user uploads Meme in S3 bucket\
+				- this event triggers an lambda function that takes the Meme and adds some text to the Meme\
+				- this lambda function triggers another lambda function to store the updated meme in S3 bucket\
+			- example2 (compute service)\
+				- user invokes http requests via API Gateway\
+				- API Gateway invokes a lambda function in turn that executes and returns a response back\
+				- API Gateway returns the response back to user\
+	- As compared to traditional architecture, Serverless Architecture is highly preferred for multiple reasons\
+		- Scales well\
+		- No Infra management overhead, \
+		- Cost Effective (extremely cheap) - Pricing Model based on No of requests & Execution Duration\
+	- Supports following Languages - Node.js, Java, Python, C#, Go, PowerShell\
+	- Each event triggers a function, but function may trigger other functions so 1 event = x functions\
+	- Other server less services (DynamoDB, API Gateway, Aurora Serverless)\
+	- Downside - can get extremely complicated (especially debugging - use X-RAY service for that)\
+	- RDS cannot trigger lambda as of yet\
+\
+Elastic Beanstalk\
+	- Paas\
+	- With Elastic Beanstalk, you can quickly deploy and manage applications in the AWS Cloud \
+		- without having to spent the kind of effort that we do in IAAS solution \
+		- without having to spend effort in the infrastructure that run those applications\
+		- Three step process\
+			- Create a application and select an Environment\
+			- Upload your application zip file\
+			- Run the application\
+		- You can create .ebextensions folder in your application root folder to customise the deployment\
+			- Packages - application dependent additional packages can be installed through this\
+			- Groups: Groups can be created\
+			- Users: Users can be created and associated to one or more previously created groups\
+			- Sources - sources can be downloaded in the specified folder\
+			- Files - files can be created along with required permissions for owner, group and other\
+			- Commands - commands to be executed can be specified\
+			- Services - Services to be enabled can be specified during boot time\
+			- Container Commands - if you are using container, container commands can be specified here\
+\
+		- NOTE: Files specified in .ebextensions are executed in alphabetical order\
+			- you can name the files as follows\
+				- \'930001_packages\'94\
+				- \'930002_groups\'94\
+				- \'930003_sources\'94 and so on..\
+\
+Containers\
+Docker\
+	- Docker is a software platform that allows you to build, test and deploy applications quickly\
+	- It packages software into standardised units called \'93Containers\'94\
+		- Containers allow you to easily package your code, configurations and dependencies\
+		- It packages them into easy to use building blocks that deliver\
+			- environmental consistency\
+			- operational efficiency\
+			- developers productivity\
+			- and version control\
+	- It is highly reliable: you can quickly deploy and scale applications into any environment and know that it will run\
+	- It is infinitely scalable: Running Docker on AWS is a great way to run distributed applications at any scale\
+\
+Virtualization vs Containerisation\
+	- Virtualization architecture\
+		- Hardware Layer -> Host OS Layer -> Hypervisor 2 Layer -> Fleet of VMs\
+			- VM architecture\
+				- Guest OS Layer -> Dependencies Layer -> Application Layer \
+\
+	- Containerisation architecture\
+		- Hardware Layer -> Host OS Layer -> Docker Engine -> Fleet of Docker Containers\
+			- Docker Container archtiecture\
+				- Dependencies Layer -> Application Layer\
+\
+	- Traditional Virtualisation has density compromises\
+	- Docker achieves higher density and improved portability by removing the per container Guest OS\
+	- Docker containers tend to be much faster to start because of their lightweight compared to vm\
+	- Contianerization benefits\
+		- Escape from dependency hell\
+		- Consistent progression from Dev -> Test -> QA -> Stage -> Prod (just need to setup the containers and code)\
+		- Isolation - performance or stability issues with App A in Container A, won\'92t impact App B in Container B\
+		- Much better resource management \
+			- as compared to Virtualization where Guest OS takes about 80% of your resource\
+		- Extreme code portability (which is why the analogy of the Shipping Container is often cited)\
+		- Micro-Services \
+			- container A with UI layer \
+			- container B with APIs / processing layer\
+			- and container C with Mysql\
+			- injection of one container on the other etc\
+\
+Docker Components\
+	- Docker Image\
+		- Think of Docker image as an AMI - however it contains only the file required to boot a container\
+		- Read only templates from which Docker containers are launched\
+		- Read only template with instructions for creating a Docker container\
+		- It contains \
+			- an ordered collection of root filesystem changes \
+			- and the corresponding execution parameters for use within a container runtime\
+		- An image is created from a Dockerfile\
+		- Images are stored in a Registry, such as DockerHub or AWS ECR\
+	- Docker Container\
+		- Each container is created from a Docker Image\
+		- It holds everything that is needed for an application to run\
+		- Containers can be started, stopped, moved and deleted\
+		- Each container is an isolated and secure application platform \
+	- Layers / Union File System\
+		- Each Docker image consists of a series of Layers \
+		- Dockers makes use of the union file systems to combine these layers into a single image\
+		- It allow files and directories of separate file systems known as branches to be transparently overplayed\
+		- Thus forming a single coherent file system\
+		- One of the reasons why Docker is so lightweight is because of these layers when you change docker image\
+		- For ex:\
+			- when you release new version of application\
+				- a new layer is going to be built rather than replacing the whole image or entirely rebuilding\
+				- only that layer is added or updated\
+				- so you don\'92t need to distribute a whole new image to do the update\
+				- you just push out a new layer and this makes distributing doc images files much faster and simpler\
+	- Docker File (?? -  contains instructions to build a new image)\
+		- Dockerfile is a plain text file that specifies the components that are to be include in the container\
+		- It uses a simple and descriptive set of steps called \'93Instructions\'94\
+		- Instruction creates a new layer in our image \
+		- It include actions like run a command or add a file or add a directory or create an environment variable\
+		- Instructions are stored in docker file\
+		- Docker reads this docker file when you request to build an image\
+			- It then executes instructions and returns a final image\
+	- Docker Daemon / Engine\
+		- Main heart of the whole Docker process\
+		- It creates the operating environment for your distributed application\
+		- The Daemon communicates with the Docker Client to execute commands to build ship and run containers\
+	- Docker Client\
+		- This is basically the interface between you and the docker engine\
+		- Allows the creation, manipulation and deletion of docker containers and control of Docker Daemon\
+	- Docker Registries / Docker Hub\
+		- Basically hold these images and these are public or private stores\
+		- you can upload or download your images\
+		- Public Docker Registry is provided with the Docker\
+			- It serves as a huge collection of existing images for you to use\
+			- These can be images that you create yourself or you can use previously existing images\
+\
+	- installation\
+		- MAC - install docker desktop\
+	- docker main commands\
+		- docker ps\
+		- docker images\
+		- docker info\
+		- docker pull <imag> (for eg: docker pull nginx)\
+		- docker run -p 80:80 -dt nginx (this will also pull from docker hub if image not found locally)\
+\
+	- pushing a new image in public registry (example uses ECR - amazon\'92s docker hub or public registry)\
+		- first build and run locally\
+			- docker build -t myapache .\
+			- docker run -d -p 80:80 myapache\
+		- Login in to ECR and push the image\
+			- aws ecr get-login \'97no-include-email \'97region ap-south-1\
+			- docker tag myapache ECR-DNS/repo-name\
+			- docker push tag-name:version\
+\
+EC2 and Dockers\
+	- Installing Docker in Amazon Linux\
+#######################\
+yum -y install docker\
+systemctl start docker / service docker start\
+#########################\
+\
+EB and Dockers\
+	- Two platforms configurations available\
+		- Single Container Docker\
+		- MultiContainer Docker\
+\
+	- create new application\
+	- create environment\
+		- select Docker (or MultiContainer)\
+		- choose docker file (see sample content)\
+		- in the security specify ec2 instance key pair (so that you can login later in EC2 instance)\
+		- go ahead and execute\
+\
+Sample docker file content for creating a container with nginx WebServer\
+\{\
+\
+  "AWSEBDockerrunVersion": "1",\
+\
+  "Image": \{\
+\
+    "Name": "nginx",\
+\
+    "Update": "true"\
+\
+  \},\
+\
+  "Ports": [\
+\
+    \{\
+\
+      "ContainerPort": "80"\
+\
+    \}\
+\
+  ]\
+\
+\}\
+\
+ECS (EC2 Container Service)\
+	- EC2 is a highly scalable, fast, container management service \
+		- it makes it easy to run, stop and manage Docker containers on a cluster EC2 instances \
+	- Provides API calls to	\
+		- Launch and stop container based applications\
+		- get the state of your cluster from a centralised service\
+		- gives access to many familiar Amazon EC2 features\
+	- Simply put, ECS is the Amazon\'92s managed version of Docker\
+		- Allows you to manage Docker Containers on a cluster of EC2 instances\
+	- ECS is a regional service that you can use in one or more AZ\
+		- across new or existing VPC to schedule the placement of containers across your cluster based on your\
+			- resource needs\
+			- isolation policies\
+			- availability requirements\
+	- Eliminates the need for you to operate your own cluster management or configuration management systems\
+		- or to scaling your management infrastructure\
+	- It can also be used to \
+		- create a consistent deployment and build experience\
+		- scale batch and ETL workloads\
+		- build sophisticated application architectures on a micro services model\
+\
+	Containers\
+		- Containers are a method of operating system virtualisation \
+			- that allow you to run an application and its dependencies in a resource-isolated processes\
+		- Containers have everything the software needs to run\
+			- libraries, system tools, code and runtime\
+		- Containers are created from a read-only template called an image\
+\
+	ECR\
+		- ECR (Amazon\'92s EC2 Container Registry) is a managed AWS Docker registry service\
+			- Amazon\'92s version of Docker Hub\
+			- It is secure, scalable and reliable\
+		- ECR supports private Docker repositories with resource-based permissions using AWS IAM\
+			- so that specific users or EC2 instances can access repositories or images\
+		- Developers can use Docker CLI to pull, push and manage images\
+		\
+	ECS Task Definitions\
+		- It is required to run Docker Containers in ECS\
+		- It is a text file in JSON format - it contains description for one or more containers that forms the application\
+		- Think of a task definition as a cloud formation template but for docker\
+		- Sample parameters that can be specified in Task Definitions are\
+			- which Docker Image to use with the containers in the task\
+			- how much CPU and memory to use with each container\
+			- whether container are linked together in a task\
+			- the Docker networking mode to use\
+			- what ports (if any) from the containers are mapped to host container instance\
+			- whether the task should continue to run if the container fails / finishes\
+			- the command the container should run when it is started\
+			- what environment variables should be passed to the container when it starts\
+			- any data volumes that should be used with the containers in the task\
+			- what IAM role your tasks should use for permissions\
+\
+	ECS Services\
+		- It allows you to run and maintain a specified number of instances of a task definition simultaneously in Cluster\
+		- Think of Services like Auto-Scaling groups for ECS\
+		- If a task fails, ECS Service scheduler launches another instance of your task definition to replace it\
+			- thereby maintains the desire count of tasks in the service\
+\
+	ECS Clusters\
+		- It is a logical grouping of container instances that you can place tasks on\
+		- When you first use ECS service, a default cluster is created for you\
+		- You can create additional clusters to keep your resources separate\
+		- Clusters can contain multiple different container instance types\
+		- Clusters are region-specific\
+		- Container instances can only be part of one cluster at a time\
+		- Create IAM policies for your clusters to allow or restrict user\'92s access to specific clusters\
+\
+	ECS Scheduling\
+		- Two types of scheduler\
+		- Service Scheduler\
+			- Ensures that specified number of tasks are constantly running and reschedules taks when task fails\
+			- Can ensure tasks are registered against an ELB\
+\
+		- Custom Scheduler\
+			- You can create your own schedulers that meet your business needs\
+			- Leverage third-party schedulers, such as Blox\
+		\
+		- ECS schedulers leverage the same cluster state information provided by the ECS API \
+			- to make appropriate placement decisions	\
+\
+	ECS Container Agent\
+		- Allows EC2 instances to connect to your cluster\
+		- It is included in the ECS-optimized AMIs or EC2 instances supporting ECS specification\
+		- Linux Based\
+\
+	ECS Security\
+		- IAM Roles\
+			- EC2 instances use an IAM role to access ECS\
+			- ECS tasks use an IAM role to access services and resources\
+\
+		- Security Groups attach at the instance-level (i.e. the host level .. not at the task or container level)\
+\
+		- You can access and configure the OS of the EC2 instances in your ECS cluster (?)\
+\
+	ECS Limits\
+		- Soft Limits\
+			- Default Cluster per region and Instances per cluster = 1000\
+			- Default Services per Cluster = 500\
+		- Hard Limits\
+			- One Load Balancer per Service\
+			- 1000 Tasks per Service (\'93desired count\'94)\
+			- Max 10 containers per Task Definition\
+			- Max 10 Tasks per instance (host)\
+EKS\
+ECR\
+	- Fully managed Docker Container Registry that makes it easy for developers \
+		- to store, manage and deploy Docker container images\
+	- It hosts your images in a highly available and scalable architecture, allowing you to\
+		- deploy containers for your applications\
+\
+Example to create a Image and push it to ECR\
+#################################\
+01. Create an IAM Role for EC2 Service having the policy  \'93AmazonEC2ContainerRegistryFullAccess\'94\
+02. Launch a EC2 instance (Amazon Linux t2.micro)\
+	- with that IAM Role \
+	- security group having ssh access and http port 80 open\
+	- key pair (usual one)\
+03. Login in to EC2 instance from terminal\
+04. with root access (sudo su)\
+05. Install docker in it\
+	yum -y install docker\
+	systemctl start docker / service docker start\
+06. Create \'93myapache\'94 folder in /root\
+07. Create a Dockerfile inside the \'93myapache\'94 (see DockerFile content)\
+08. Run the following commands inside the \'93myapache\'94 folder\
+\
+#### Commands ####\
+docker build -tag myapache .\
+\
+docker run -d -p 80:80 myapache\
+\
+#this command gives you the ecr docker credential to push your image\
+#copy the output of this command from the terminal and again paste in the command prompt and press enter\
+#you should see \'93
+\f1\fs22 \cf2 \CocoaLigature0 Login Succeeded\'94
+\f0\fs24 \cf0 \CocoaLigature1 \
+aws ecr get-login --no-include-email --region ap-south-1\
+\
+#docker tag myapache ECR-DNS/repo-name\
+#For eg\
+docker tag myapache 434265470577.dkr.ecr.ap-south-1.amazonaws.com/myecrrepo\
+\
+#docker push tag-name:version\
+#For eg\
+docker push 
+\f1\fs22 \cf2 \CocoaLigature0 434265470577.dkr.ecr.ap-south-1.amazonaws.com/myecrrepo
+\f0\fs24 \cf0 \CocoaLigature1 \
+\
+Docker File Content\
+\'97\'97\'97\'97\'97\'97\'97\'97\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+
+\f1\fs22 \cf2 \CocoaLigature0 FROM ubuntu:16.04\
+\
+# Install dependencies\
+RUN apt-get update\
+RUN apt-get -y install apache2\
+\
+# create index.html\
+RUN echo 'Hello from Shekhar!' > /var/www/html/index.html\
+\
+# Create apache script file to start apache\
+RUN echo '. /etc/apache2/envvars' > /tmp/run_apache.sh\
+RUN echo 'mkdir -p /var/run/apache2' >> /tmp/run_apache.sh \
+RUN echo 'mkdir	-p /var/lock/apache2' >> /tmp/run_apache.sh\
+RUN echo '/usr/sbin/apache2 -D FOREGROUND' >> /tmp/run_apache.sh\
+RUN chmod 755 /tmp/run_apache.sh\
+\
+EXPOSE 80\
+\
+CMD /tmp/run_apache.sh \
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \CocoaLigature1 \'97\'97\'97\'97\'97\'97\'97\'97\
+\
+EB and Dockers\
+	- Two platforms configurations available\
+		- Single Container Docker\
+		- MultiContainer Docker\
+\
+	- create new application\
+	- create environment\
+		- select Docker (or MultiContainer)\
+		- choose docker file (see sample content)\
+		- in the security specify ec2 instance key pair (so that you can login later in EC2 instance)\
+		- go ahead and execute\
+\
+Sample docker file content for creating a container with nginx WebServer\
+\{\
+\
+  "AWSEBDockerrunVersion": "1",\
+\
+  "Image": \{\
+\
+    "Name": "nginx",\
+\
+    "Update": "true"\
+\
+  \},\
+\
+  "Ports": [\
+\
+    \{\
+\
+      "ContainerPort": "80"\
+\
+    \}\
+\
+  ]\
+\
+\}\
+\
+AWS Fargate\
+AWS Fargate is a new compute engine for containers that allows you to focus on running your applications \
+	- WITHOUT NEEDING to provision, monitor & manage the underlying compute infrastructure\
+		- you don\'92t need to worry about\
+			- operating system hardening\
+			- monthly patching lifecycles\
+			- monthly vulnerabilities assessments etc \
+\
+AWS Batch\
+- A batch job is a collection of commands that are processed in sequence often without requiring user input or intervention\
+- Generally batch jobs accumulate during working hours and are then executed during the evening or when system is idle\
+- Batch jobs wait in a job queue for processing when the system has the available resources\
+\
+- AWS Batch enables you to easily and efficiently run batch computing workloads of any scale on AWS using\
+	- AWS EC2 and AWS EC2 spot\
+}

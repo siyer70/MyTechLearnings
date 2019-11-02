@@ -1,0 +1,44 @@
+local database : crud_database_4
+
+Question 1 
+Suppose you have collection “sample” that contains only the following documents
+
+db.sample.insert({"_id":3, "a":[2, 5, 5]});
+db.sample.insert({"_id":4, "a": [2,5,6], "b":[1,4]})
+
+Which of the following choices below display state of sample collection after the following query is executed?
+db.sample.update( {}, { "$pull": {"a":5} }, {multi:true})
+
+Answer : 
+{"_id":3, "a":[2] },
+{"_id":4, "a": [2,6], "b":[1,4]}
+
+Question 2
+Consider the following query
+db.sample1.update({"b.c":4}, {"$set": {"b.$"  : {"c":"foo"}}}, {multi:true})
+And following document from sample collection
+db.sample1.insert({"_id":3, "a": "tom", "b": [ { "c":1 }, { "c":"hello_world", "d":22}, { "c":4 , "e":5 }], "g":13})
+
+Answer : First element of an array  {"c":4,"e":5} replaced to {"c":"foo"}
+
+Question 3
+Suppose you have a collection “sample” with index created as follows.
+db.sample2.ensureIndex( { “foo”: -1})
+
+For which of the following queries can MongoDB use the index to avoid scanning of all documents in the collection
+db.sample2.find({"foo": /a*b/})
+db.sample2.find({"foo": /^c*d/})
+db.sample2.find({"foo":/^e*f/})
+
+Answer : 2 & 3
+
+Question 4 Consider this query 
+db.sample3.find({"b":{"$gte":4,"$lte":6}})
+Which of the following documents would be reviewed by this query? Assume all documents  are in sample collection.  Check all that apply.
+
+Option 1 : db.sample3.insert({"_id":1, "a":1, "b":10})
+Option 2 : db.sample3.insert({"_id":13, "a":2, "b":6}) -----> true
+Option 3 : db.sample3.insert({"_id":24, "a":3, "b":3})
+Option 4 : db.sample3.insert({"_id":25, "a":3, "b":7})
+Option 5 : db.sample3.insert({"_id":26, "a":3, "b":5}) -----> true
+

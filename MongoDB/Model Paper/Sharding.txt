@@ -1,0 +1,57 @@
+1)Suppose you are working with a collection containing survey data from undergraduate university students, typically age 18-21. The documents contain fields for respondents name and age and individual answers to a list of questions. You have put data in a sharded cluster, with the cluster’s status shown below.
+
+Which shard is/are most likely to contain chunks that will be split most often as additional survey  are added ?
+
+“age”: 1  “age”:16
+“age”:16  “age”:18
+“age”:18  “age”:21        ----> true
+
+2. Suppose you have a sharded cluster and create the following indexes in the sample collection.
+
+Db.sample.ensureIndex( {  “a” : 1 } )
+Db.sample.ensureIndex( { “b” : 1 } )
+Db.sample.ensureIndex( { “c” : 1, “a” :1, “b”:1 } )
+Db.sample.ensureIndex( { “c” : 1 } )
+Db.sample.ensureIndex( { “d” : 1 } )
+
+Which of these queries will be able to match all of its query conditions using one if indexes above ?
+
+Db.sample.find({ “a”:1, “b”:1 }) --> true
+Db.sample.find({ “b”:1, “c”:1 }) --> true
+Db.sample.find({ “a”:1, “d”:1 }) --> true
+Db.sample.find({ “c”:1, “a”:1 }) --> true
+None of above 
+
+3. Suppose you have a sharded cluster. Given a compound shard key of { "a":1, "b": 1}. Which of the following queries will enable a mongos to target specific shards rather than doing a scatter gather query ? Check all  that apply.
+
+db.sample.find( { “b” : { “$gt” : 5  }})
+db.sample.find({ “a” :  { “$lte” : 7 }}) 			--> true
+db.sample.find({ “a”: 12, “b”: {“$gt”: “jello”}})   --> true
+
+4. Consider the collection of users with the following fields and possible values 
+
+“phone_number” : (a 10-digit number)
+“gender” : { “male”, “female”, or “other”}
+“weight “: { interger in pounds,  known for about half the users}
+“started_driving_at” : the age where the user got their driver’s license
+“ethnicity” : {several choices given }
+
+Which of fields would make the best shard key ?
+
+Phone_number, gender, weight, started_driving_at, ethnicity
+
+Answer : Phone_number
+
+5. 
+
+Product ID  minkey – 9294 Shard0000
+Product ID  9294 – 18684  Shard0002
+Product ID  18684 – 27851  Shard0003
+Product ID  27851 – 36852  Shard0004
+Product ID  36852  -- 46047  Shard0005
+Product ID  46047 – 55450  Shard0006
+
+Use test
+Db.products.find({ “ProductId” : { “$gte” : 20000, “$lte”:40000 }  } );
+
+Shard0003, Shard0004, Shard0005

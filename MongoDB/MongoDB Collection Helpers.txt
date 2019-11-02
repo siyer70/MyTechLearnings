@@ -1,0 +1,166 @@
+//To show all records
+db.inventory.find()
+
+//Multiple write operations on same collection
+db.inventory.bulkWrite(operations, <optional params>)
+
+//count the number of records
+db.inventory.count();
+
+//copy collection
+db.inventory.copyTo("testcopy")
+
+//create Index (if already index there it will not do anything)
+db.inventory.createIndex({"item":1})
+
+//create multiple indexes
+db.inventory.createIndexes()
+
+//datasize in bytes
+db.inventory.dataSize()
+
+//delete single record
+db.inventory.deleteOne()
+
+//delete multiple records
+db.inventory.deleteMany()
+
+//provides unique values for particular field
+db.inventory.distinct("item");
+
+//drop the collection
+db.inventory.drop()
+
+//drop index
+db.inventory.dropIndex(index)
+db.inventory.dropIndex("index_name") or db.inventory.dropIndex("index_key":1)
+
+//it drops all non _id indexes
+db.inventory.dropIndexes()
+
+//ensureIndex (deprecated use createIndex
+db.inventory.ensureIndex({"item":1})
+
+//To check how many operations covered by explain command
+db.inventory.explain().help();
+
+//run explain command
+db.inventory.find({"item":"abc"}).explain();
+
+//It will drop all indexes and recreate it
+db.inventory.reIndex()
+
+//find
+db.inventory.find([query],[fields])
+
+//count no of records 
+db.inventory.find(...).count()
+
+//it will limit no of records (equivalent to Top SQL Server)
+db.inventory.find(...).limit(n)
+
+//skip number of records from the collection
+db.inventory.find(...).skip(n)
+
+//sort (equivalent to order by clause SQL)
+db.inventory.find(...).sort(...)
+
+//get single record only
+db.inventory.findOne([query], [fields], [options], [readConcern])
+
+//find and delete it
+db.inventory.findOneAndDelete( filter, <optional params> )
+
+Example:
+db.inventory.findOneAndDelete({"item" : "journal"})
+
+//search first record & replace it
+db.inventory.findOneAndReplace( filter, replacement, <optional params> )
+
+Example:
+db.inventory.findOneAndReplace( {"item" : "notebook"}, {"x":1})
+
+//find and update it
+db.inventory.findOneAndUpdate( filter, update, <optional params> )
+
+Example:
+db.inventory.findOneAndUpdate( {"item" : "paper"}, {$set:{"qty":150}} )
+
+//get database for collection
+db.inventory.getDB()
+
+//You can check everything against query plan cache
+db.inventory.getPlanCache().help()  --->require more attention
+
+//list all indexes
+db.inventory.getIndexes()
+
+db.orders.insert(
+[
+{ "_id" : 1, "item" : "abc", "price" : NumberDecimal("12.00"), "quantity" : 2 }
+{ "_id" : 2, "item" : "jkl", "price" : NumberDecimal("20.00"), "quantity" : 1 }
+{ "_id" : 3, "item" : "abc", "price" : NumberDecimal("10.95"), "quantity" : 5 }
+{ "_id" : 4, "item" : "xyz", "price" : NumberDecimal("5.95"), "quantity" : 5 }
+{ "_id" : 5, "item" : "xyz", "price" : NumberDecimal("5.95"), "quantity" : 10 }
+])
+
+//
+db.inventory.group ----------->baki
+
+//insert
+db.inventory.insert(obj)
+
+//insert one record
+db.inventory.insertOne( obj, <optional params> )
+
+//insert multiple records
+db.inventory.insertMany( [objects], <optional params> )
+
+//
+db.inventory.mapReduce ---------------------------->baki
+
+db.inventory.aggregate ---------------------------->baki
+
+//remove records filtered by query
+db.inventory.remove(query)
+
+//document replacement
+db.inventory.replaceOne
+
+//rename collection
+db.inventory.renameCollection
+
+Example
+db.testcopy.renameCollection("testrename");
+
+//run command on collection
+db.inventory.runCommand( "inventory" , {"compact":1} )
+
+//provides collection level statistics
+db.inventory.stats();
+
+//storage space occupied by collection including free space
+db.inventory.storageSize()
+
+//index size in bytes
+db.inventory.totalIndexSize()
+
+//storage allocated for data and indexes both
+db.inventory.totalSize()
+
+//getShardVersion
+db.inventory.getShardVersion()
+
+//getShardDistribution
+db.inventory.getShardDistribution()
+
+//get write concern
+db.inventory.getWriteConcern()
+
+//set write concern
+db.inventory.setWriteConcern(<write concern doc>) 
+
+//unset write concern
+db.inventory.unsetWriteConcern(<write concern doc>)
+
+

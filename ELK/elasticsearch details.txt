@@ -1,0 +1,151 @@
+brew install elasticsearch && brew info elasticsearch
+
+==> /usr/local/Cellar/elasticsearch/6.8.3/bin/elasticsearch-keystore create
+==> Caveats
+Data:    /usr/local/var/lib/elasticsearch/
+Logs:    /usr/local/var/log/elasticsearch/elasticsearch_chasrini.log
+Plugins: /usr/local/var/elasticsearch/plugins/
+Config:  /usr/local/etc/elasticsearch/
+
+To have launchd start elasticsearch now and restart at login:
+  brew services start elasticsearch
+Or, if you don't want/need a background service you can just run:
+  elasticsearch
+==> Summary
+🍺  /usr/local/Cellar/elasticsearch/6.8.3: 133 files, 103.2MB, built in 32 seconds
+
+
+brew services start elasticsearch
+
+WKMIN9419360:~ chasrini$ brew services start elasticsearch
+==> Tapping homebrew/services
+Cloning into '/usr/local/Homebrew/Library/Taps/homebrew/homebrew-services'...
+remote: Enumerating objects: 14, done.
+remote: Counting objects: 100% (14/14), done.
+remote: Compressing objects: 100% (9/9), done.
+remote: Total 14 (delta 0), reused 8 (delta 0), pack-reused 0
+Unpacking objects: 100% (14/14), done.
+Tapped 1 command (43 files, 59.5KB).
+==> Successfully started `elasticsearch` (label: homebrew.mxcl.elasticsearch)
+
+
+brew install logstash
+==> Downloading https://artifacts.elastic.co/downloads/logstash/logstash-oss-7.3
+######################################################################## 100.0%
+==> Caveats
+Configuration files are located in /usr/local/etc/logstash/
+
+To have launchd start logstash now and restart at login:
+  brew services start logstash
+Or, if you don't want/need a background service you can just run:
+  logstash
+==> Summary
+🍺  /usr/local/Cellar/logstash/7.3.2: 12,794 files, 287.7MB, built in 1 minute 15 seconds
+
+
+brew services start logstash
+==> Successfully started `logstash` (label: homebrew.mxcl.logstash)
+
+
+brew install kibana
+
+WKMIN9419360:~ chasrini$ brew install kibana
+==> Downloading https://homebrew.bintray.com/bottles/kibana-6.8.3.mojave.bottle.
+==> Downloading from https://akamai.bintray.com/f8/f8634e98d1d8ed79f691e7bf6faa4
+######################################################################## 100.0%
+==> Pouring kibana-6.8.3.mojave.bottle.tar.gz
+==> Caveats
+Config: /usr/local/etc/kibana/
+If you wish to preserve your plugins upon upgrade, make a copy of
+/usr/local/opt/kibana/plugins before upgrading, and copy it into the
+new keg location after upgrading.
+
+To have launchd start kibana now and restart at login:
+  brew services start kibana
+Or, if you don't want/need a background service you can just run:
+  kibana
+==> Summary
+🍺  /usr/local/Cellar/kibana/6.8.3: 51,589 files, 254.0MB
+
+
+brew services start kibana
+==> Successfully started `kibana` (label: homebrew.mxcl.kibana)
+
+
+brew services list
+Name          Status  User     Plist
+elasticsearch started chasrini /Users/chasrini/Library/LaunchAgents/homebrew.mxcl.elasticsearch.plist
+kibana        started chasrini /Users/chasrini/Library/LaunchAgents/homebrew.mxcl.kibana.plist
+logstash      started chasrini /Users/chasrini/Library/LaunchAgents/homebrew.mxcl.logstash.plist
+
+
+logstash-plugin install logstash-filter-multiline
+
+
+#delete all indexes
+sudo curl -X DELETE 'http://localhost:9200/_all'
+
+
+        multiline {
+                patterns_dir => "/etc/logstash/patterns"
+                pattern => "\[%{TOMCAT_DATESTAMP}"
+                what => "previous"
+        }
+        if [type] == "leagueinfo_tomcat_logs" {
+                mutate {
+                        add_tag => [ "LEAGUEINFO_TOMCAT_LOG" ]
+                }
+                if "_grokparsefailure" in [tags] {
+                        drop { }
+                }
+                date {
+                        match => [ "timestamp", "UNIX_MS" ]
+                        target => "@timestamp"
+                }
+        } else {
+                drop { }
+        }
+
+
+filter {
+
+	multiline {
+		pattern => "^(%{TIMESTAMP_ISO8601})"
+		negate => true
+		what => "previous"
+	}
+
+	grok {
+		# Do multiline matching with (?m) as the above mutliline filter may add newlines to the log messages.
+		match => [ "message", "(?m)^%{TIMESTAMP_ISO8601:logtime}%{SPACE}%{LOGLEVEL:loglevel} %{SPACE}%{NUMBER:pid}%{SPACE}%{SYSLOG5424SD:threadname}%{SPACE}---%{SPACE}%{JAVACLASS:classname}%{SPACE}:%{SPACE}%{GREEDYDATA:logmessage}" ]
+	}
+
+}
+
+
+        date {
+                match => [ "timestamp", ISO8601 ]
+                        target => "@timestamp"
+        }
+
+
+
+
+
+References
+
+Java grok patterns
+https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/java
+
+
+Spring boot Logstash
+https://blog.codecentric.de/en/2014/10/log-management-spring-boot-applications-logstash-elastichsearch-kibana/
+
+
+Example didn't work
+https://aggarwalarpit.wordpress.com/2015/12/03/configuring-elk-stack-to-analyse-apache-tomcat-logs/
+
+Patterns
+https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns
+
+
