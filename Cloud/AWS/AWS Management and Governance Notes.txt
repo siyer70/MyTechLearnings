@@ -1,0 +1,121 @@
+Management & Governance
+======================
+AWS Organisations
+	- AWS Organisations allows you to manage multiple AWS accounts at once.
+	- With Organisations, you can create groups of accounts and then apply policies to those groups
+		- Centrally manage policies across multiple AWS accounts
+		- Control Access to AWS services (SCP - Service Control Policies)
+		- Automate AWS account creation and management
+		- Consolidate billing across multiple AWS accounts
+
+Config
+AutoScaling
+	- Create a Launch Configuration (LC)
+		- Select AMI, Instant type, LC name, IAM Role, Enable/Disable Monitoring
+		- In advance details, Boot up script, Need public IP or not, 
+		- Add Storage, Security Group,  Select Key Pair and Create LC
+	OR
+	- Create a Launch template from an Instance
+	THEN
+	- Create Auto Scaling Group (ASG) from Launch Configuration / Launch Template
+		- ASG Name
+		- Number of instances to start with
+		- VPC and Subnets
+		- Advance Details
+			- Optionally select Load Balancer (if configured previously) to put the instances behind it
+			- Optionally select the target group (for Application Load Balancer only)
+			- Health check (ELB or EC2 option comes when using Load Balancer or Health check grace period)
+			- Instance Protection (disable Sacle in option)
+			- Service Linked Role (AWSServiceRoleForAutoScaling) - auto selected
+		- Scaling Policies (choose one of the option)
+			- using target tracking scaling policy (select metric type, target value, warm up time etc)
+			- using step or simple scaling policies (increase and decrease group size with alarms and actions)
+		- Configure Notifications
+		- Configure Tags
+	- Note that Launch template can also be used to create individual instances
+High Availability (HA) Architecture
+	- Netflix Simian Army to provide safe, secure and HA architecture - goo.gl/UR2nzM
+	- Always design for failure
+	- Use Multiple AZ ’s and Multiple Regions where ever you can
+	- Know the difference between Multi-AZ and Read Replicas for RDS
+		- Multi-AZ for recovery and Read Replicas for Performance
+	- Know the difference between Scaling out and Scaling up
+	- Always consider the cost element
+	- Know the different S3 storage classes
+AWS Command Line
+	- Before AWS command line is invoked
+		- setup IAM user and group
+		- enable the IAM user to have programmatic access
+		- store the access key id and secret access key in a safe place when the new IAM user is created
+	- Launch an ec2 instance
+	- ssh ec2-user@<public IP address>  -i <keypair pem file name without pem extension>
+	- once in the ec2 instance
+		- run aws configure
+			- specify the access key id, secret access key, default region
+		- execute aws commands - for eg:  aws <command> <subcommand>
+CloudWatch
+	- Monitoring service to monitor your AWS resources as well as your applications  that you run on AWS
+	- Monitors performance
+	- Can Monitor the following service group and services
+		- Compute
+			- EC2 Instances
+			- Autoscaling groups
+			- Elastic Load Balancer
+			- Route 53 Health Checks
+		- Storage & Content Delivery
+			- EBS Volumes
+			- Storage Gateway
+			- CloudFront
+		- Host Level Metrics Consists of
+			- CPU (utilisation, credit usage & credit balance)
+			- Network (In, out, Packets in & out)
+			- Disk (Reads, Read Operations, Writes, Write Operations)
+			- Status Check
+	- with EC2, it will monitor events every 5 minutes by default
+	- you can have 1 minute intervals by turning on detailed monitoring
+
+	- you can create CloudWatch alarms which trigger Notifications
+		- for eg: you can create an alarm when your ec2 instance’s cpu utilisation is over x %
+			- then send notification to a topic and send email to x address
+			- once the alarm is configured, ssh into the ec2 instance
+			- type ‘while true; do echo “keep printing”; done;’
+			- this will max out cpu utilization
+		- Note that before you setup the alarm, when you launch your EC2, 
+			- you need to enable cloud watch detailed monitoring
+
+	- you can create Dashboards (Global / Regional)
+
+	- CloudWatch Logs helps you to aggregate, monitor and store logs
+		- you can do performance logging - you can send all your logs to cloud watch
+
+	- you can configure events 
+		- you can get near real time stream of system events that describe changes in aws resources
+		- you can then configure to respond to those events (for eg: calling lambda etc)
+
+	- Often confused with CloudTrail
+		- CloudTrail monitors the API Calls in the AWS platform
+		- Cloudwatch is all about performance and CloudTrail is all about auditing
+
+
+Cloud Formation
+	- is a way of completely scripting your cloud environment (Infrastructure as code)
+	- You start by creating a Stack 
+		- A stack is a group of related resources that you manage as a singe unit
+	- While creating a stack
+		- You can choose a pre-existing “Quick Start Template” 
+			- A template is a JSON/YAML formatted text file that describes your stack’s resources and their properties
+		- “Quick Start” is a bunch of CloudFormation templates already built by the AWS Solution Architects
+			- It allows you to create complex environments very quickly
+		- To start from scratch - use CloudFormation Designer to create or modify an existing template
+		- You can then upload the template in S3
+		- Or specify an pre-existing S3 template URL to use
+CloudTrail
+	- Think of CCTV (Audit trail)
+	- Increases visibility into your user and resources activity by recording AWS Console actions and API Calls
+		- which users and accounts called AWS, 
+		- the source IP address from which the calls were made
+		- when the calls occurred 
+OpsWorks
+Systems Manager
+Trusted Advisor
+Service Catalog

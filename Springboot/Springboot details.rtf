@@ -1,4 +1,4 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf400
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf600
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;}
 {\colortbl;\red255\green255\blue255;}
 {\*\expandedcolortbl;;}
@@ -17,4 +17,51 @@ https://stackoverflow.com/questions/20405474/add-context-path-to-spring-boot-app
 \
 https://stackoverflow.com/questions/35966204/how-to-integrate-swagger-with-jersey-spring-boot\
 \
+\
+\
+@SpringBootApplication\
+	- Indicates that it is a spring context file\
+	- Enables AutoConfiguration\
+	- Enables Autoscanning of beans\
+\
+What is autoconfiguration\
+- Autoconfiguration is a feature that spring provides where in it checks the classes/frameworks available in the classpath and assumes certain responsibilities\
+for example - it initializes/configures DispatcherServlet or ViewResolver if webmvc.jar is found in the classpath\
+\
+you can enable logging to see the internals of what is happening during autoconfiguration\
+add the following line in the application.properties\
+logging.level.org.springframework = DEBUG \
+\
+(you can then see in the logs, what conditions matched and what all have been autoconfigured - it also list what conditions didn\'92t match because of which what items are not configured)\
+\
+Restful endpoint best practices\
+- read Richardson Maturity Model\
+	- Level 0 - Exposing soap webservices in rest style\
+	- Level 1 - Expose resources with proper URI\
+	- Level 2 - Level 1 + proper HTTP methods\
+	- Level 3 - Level 2 + HATEOAS Data + Next possible actions\
+- Restful service best practices\
+	- Consumer First\
+	- Make best use of http (proper http methods for specific actions)\
+	- Think of resources\
+	- Use nouns and plurals while exposing rest endpoints where possible\
+		- some exceptions are allowed such /search, put /gists/\{id\}/star etc\
+	- do not send sensitive info in uri\
+	- return proper http response code\
+\
+Spring Actuator for Monitoring\
+\
+Just enable the starter in pom \'93starter-actuator\'94 \
+in the property file - enable all mangement beans endpoints\
+then browse the application - http://localhost:8080/\
+it would then show up HAL Browser with number of endpoints\
+for example\
+- auditevents\
+- httptrace (see all the requests and time taken for each of those request)\
+- you can get to know which services are used - how many successful and how many failed\
+- jvm memory consumed\
+\
+Hysterix for fault tolerance\
+you can add the starter and \'93@EnableHysterix\'94 after @SprintBootApplication\
+in the restendpoints, you can specify the fallbackmethod that will be called when the rest endpoint throws exception\
 }

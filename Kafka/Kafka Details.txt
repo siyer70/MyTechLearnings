@@ -315,6 +315,18 @@ Summary
 
 References:
 
+confluent local start
+
+kafka-topics --zookeeper 127.0.0.1:2181 --topic scores --delete
+
+kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic cricket_scores
+
+kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 4 --topic truck_location
+
+kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 4 --topic ayodhya_tweets
+
+kafka-topics --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 4 --topic pollution_tweets
+
 
 Follow the confluent getting started link provided below
 https://docs.confluent.io/current/quickstart/ce-quickstart.html#ce-quickstart
@@ -322,6 +334,31 @@ https://docs.confluent.io/current/quickstart/ce-quickstart.html#ce-quickstart
 Kafka Tutorial:
 https://learning.oreilly.com/videos/apache-kafka-series/9781789342604
 
+kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic truck_location --group truck_loc_consumers
+
+kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic ayodhya_tweets --group ayodhya_tweets_consumers
+
+the under-mentioned command shows the current offset, how much the consumer group is lagging behind
+- if all the messages are consumed, then lag will be 0
+
+kafka-consumer-groups --bootstrap-server 127.0.0.1:9092 --group truck_location_consumer --describe
+
+
+
+Rebalancing of partitions in Consumer group is an important concept
+===================================================================
+
+1) if more consumers join subsequently or one or more consumer failed to respond or dies, then consumer coordinator will perform the rebalancing of the partitions
+2) the same will be logged and newly assigned partitions will be specified
+
+
+Client/Broker Bi-Directional Compatibility
+==========================================
+
+1) An Older client (1.1) can talk to a new broker (2.0)
+2) A newer client (2.0) can talk to a older broker (1.1)
+
+Bottom line: Always use the latest client library version if you can
 
 
 

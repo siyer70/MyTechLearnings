@@ -1,0 +1,15 @@
+which process is using specific port
+netstat -an | grep ':80'
+(will list the process running on port if any)
+
+(base) WKMIN9419360:chapter4 chasrini$ sudo lsof -i:7070
+COMMAND PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+java     72 jenkins  165u  IPv6 0xeaf3ceb1210ace03      0t0  TCP *:arcp (LISTEN)
+(base) WKMIN9419360:chapter4 chasrini$ sudo lsof -i:8090
+COMMAND  PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+cirratod  58 root    9u  IPv4 0xeaf3ceb11d960d03      0t0  TCP localhost:8090 (LISTEN)
+cirratod  58 root   10u  IPv6 0xeaf3ceb11d958cc3      0t0  TCP localhost:8090 (LISTEN)
+(base) WKMIN9419360:chapter4 chasrini$ sudo lsof -i:9300
+COMMAND   PID     USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+java    62022 chasrini  183u  IPv6 0xeaf3ceb13e303ac3      0t0  TCP localhost:vrace (LISTEN)
+java    62022 chasrini  185u  IPv6 0xeaf3ceb13e301283      0t0  TCP localhost:vrace (LISTEN)

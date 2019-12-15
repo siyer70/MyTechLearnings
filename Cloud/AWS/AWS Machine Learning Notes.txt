@@ -1,0 +1,13 @@
+Machine Learning
+=============
+
+Amazon SageMaker
+Amazon Comprehend
+AWS Lex
+Machine Learning
+Amazon Polly
+Rekognition
+Amazon Transcribe
+Amazon Translate
+Amazon Textract
+Amazon Forecast

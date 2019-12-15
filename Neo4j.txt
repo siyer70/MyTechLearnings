@@ -1,0 +1,187 @@
+What is a Graph
+	- Mathematical structures that are used in order to show relationships between objects
+	- Fundamental units of Graph
+		- Vertices (vertex) or Nodes
+		- Edges (Denotes relationships) - is the connecting link between two vertices
+
+	- Degree of Vertex is the number of edges connected to that vertex
+	- Graph Order is the number of vertices
+	- Graph Size is the number of edges
+	- Degree Sequence 
+
+Example
+
+     A
+    / \
+   /   \
+  B 	C
+         \
+          \
+           D
+
+Degree of Vertex 
+	A - 2 (two edges connected to it)
+	B - 1
+	C - 2
+	D - 1
+Degree Sequence is (1, 1, 2, 2)
+Graph Order - 4 (because we have 4 vertex)
+Graph Size - 3 (We have 3 edges)
+
+Why Graph DB
+- Social Questions
+	How do I know you (Facebook, Twitter, LinkedIn)
+- Routing Questions
+	How do I get from London to France
+- Recommendation questions
+	Where should I have lunch
+
+Widely Applied in
+- Computer Networks
+- Social Networks
+- Communication Networks
+- Information Networks
+- Computer Design
+- Transportation Networks
+- Biological Networks
+
+Advantages of Graph DB
+
+- Easy to represent connected data
+- very fast to retrieve/traverse/navigate connected data
+	(no complex joins to retrieve data)
+	- uses the concept of relationships
+	- graph naturally form the paths
+
+ can represent semi-structure data easily
+
+Neo4j
+	- Open Source
+	- Schema Free
+	- NoSQL
+
+Property Graph Model - (Key Value Pairs)
+
+cypher query language sample
+
+(Before executing the below, if you want to start with clean state and delete all nodes and relationship, then you can use the below)
+
+BEWARE - the below command will wipe out all relationships and nodes in db
+****
+match () -[r]- () delete r;
+match (n) delete n;
+****
+
+CREATE (socialNetwork : SocialNetwork{name: 'Social Network'})
+
+CREATE (Geeta : Person{name : 'Geeta', age: 24})
+CREATE (Sugreev : Person{name : 'Sugreev', age: 32})
+CREATE (Ram : Person{name : 'Ram', age: 25})
+CREATE (Sita : Person{name : 'Sita', age: 21})
+CREATE (John : Person{name : 'John', age: 43})
+CREATE (Eric : Person{name : 'Eric', age: 54})
+CREATE (Ken : Person{name : 'Ken', age: 58})
+CREATE (Jaydeep : Person{name : 'Jaydeep', age: 42})
+
+CREATE (Delhi : Place{name: 'Delhi'})
+CREATE (Ayodhya : Place{name: 'Ayodhya'})
+CREATE (NewYork : Place{name: 'New York'})
+CREATE (London : Place{name: 'London'})
+CREATE (HongKong : Place{name: 'Hong Kong'})
+
+CREATE (Geeta)-[:LIVES_IN]->(Delhi)
+CREATE (Sugreev)-[:LIVES_IN]->(London)
+CREATE (Ram)-[:LIVES_IN]->(Ayodhya)
+CREATE (Sita)-[:LIVES_IN]->(Ayodhya)
+CREATE (John)-[:LIVES_IN]->(NewYork)
+CREATE (Eric)-[:LIVES_IN]->(NewYork)
+CREATE (Ken)-[:LIVES_IN]->(NewYork)
+CREATE (Jaydeep)-[:LIVES_IN]->(HongKong)
+
+CREATE (Ram)-[:KING_OF]->(Ayodhya)
+
+CREATE (Geeta)-[:FRIEND_OF]->(Sugreev)
+CREATE (Sugreev)-[:FRIEND_OF]->(Geeta)
+CREATE (Sita)-[:SPOUSE_OF]->(Ram)
+CREATE (Ram)-[:SPOUSE_OF]->(Sita)
+CREATE (Ram)-[:FRIEND_OF]->(Sugreev)
+CREATE (Sugreev)-[:FRIEND_OF]->(Ram)
+CREATE (Jaydeep)-[:COLLEAGUE_OF]->(Ken)
+CREATE (Ken)-[:COLLEAGUE_OF]->(Jaydeep)
+CREATE (John)-[:BOSS_OF]->(Ken)
+CREATE (John)-[:BOSS_OF]->(Jaydeep)
+CREATE (Eric)-[:COLLEAGUE_OF]->(John)
+CREATE (John)-[:COLLEAGUE_OF]->(Eric)
+CREATE (Eric)-[:BOSS_OF]->(Geeta)
+
+CREATE (Geeta)-[:PART_OF]->(socialNetwork)
+CREATE (Sugreev)-[:PART_OF]->(socialNetwork)
+CREATE (Ram)-[:PART_OF]->(socialNetwork)
+CREATE (Sita)-[:PART_OF]->(socialNetwork)
+CREATE (John)-[:PART_OF]->(socialNetwork)
+CREATE (Eric)-[:PART_OF]->(socialNetwork)
+CREATE (Ken)-[:PART_OF]->(socialNetwork)
+CREATE (Jaydeep)-[:PART_OF]->(socialNetwork)
+
+
+RETURN socialNetwork;
+
+
+
+Create Node and Relationship in one command
+create p = (sachin:SportsPerson {name:'Sachin Tendulkar'}) -[:LOVES]-> (cricket:Sport {name:'Cricket'}) return p;
+
+create p = 
+(
+(ravi:Person {name:'Ravi Shankar', age: 23}) 
+-[:FRIEND_OF]-> 
+(shweta:Person {name: 'Shweta Khanna', age:22})
+), (ravi) <-[:FRIEND_OF]- (shweta)
+return p;
+
+
+merge command works like upsert (idempotent - safest to use)
+- if the node or relationship is not found, it creates it
+- if the node or relationship is found, it updates if any changes needed
+- else nothing is done
+
+you can execute the below command any number of times
+
+match (ravi:Person {name:'Ravi Shankar'}), (shweta:Person {name:'Shweta Khanna'})
+merge r1 = ((ravi) -[:CLASSMATE]-> (shweta))
+merge r2 = ((ravi) <-[:CLASSMATE]- (shweta))
+return r1, r2;
+
+(note that above commands creates a bi-directional relationship)
+
+create unique is similar to merge but works best if entire path doesn't exist - i.e. if you have both node and relationship specified, if one exist and other doesn't, then it can cause issues, as it will duplicate the one that exist - it works fine, if neither the node(s) nor the relationship(s) specified doesn't exist - so merge is still the safer bet
+
+
+use set and remove to add/update/remove label and proerties
+
+match (ravi:Person {name:'Ravi Shankar'}) set ravi.girlfriends = ['Anushka', 'Anjali', 'Babita', 'Chitra', 'Deepika', 'Disha', 'Esha', 'Farah', 'Gautami', 'Geeta', 'Hansika', 'Huma', 'Indira', 'Jaya', 'Katrina', 'Kirti', 'Kajal', 'Kajol', 'Kalpana', 'Kareena', 'Leela', 'Meenu', 'Mahima', 'Mamta', 'Madhuri', 'Meenakshi', 'Mumtaz', 'Nayantara', 'Namitha', 'Neha', 'Nisha', 'Oviya', 'Priya', 'Pooja', 'Priyanka', 'Pallavi', 'Poonam', 'Preeti', 'Rambha', 'Ritu', 'Ruchika', 'Sandhya', 'Sangeetha', 'Shwetha', 'Sakshi', 'Seema', 'Shreya', 'Shilpa', 'Shikha', 'Shraddha', 'Simran', 'Sonali', 'Smita', 'Sneha', 'Sonakshi', 'Swati', 'Tapsi', 'Tamanna', 'Tina', 'Urvashi', 'Vidya', 'Yami', 'Zoya']
+
+
+you can use the where clause while matching
+
+match (n:Place {name:'Ayodhya'}) set n.country = 'India'
+match (n:Place) where n.country = 'India' return n; 
+
+
+you can also use the relationship for querying
+match p = (r:Person) -[:SPOUSE_OF]-> (s:Person) return p;
+
+
+you can set the properties for relationship
+match p = (p1:Person) -[r:CLASSMATE]- (p2:Person) 
+set r.classtype = ['Music', 'Academic', 'Cultural']
+return p;
+
+
+limit records query
+match (n:Person) return n limit 5;
+
+
+more samples 
+https://neo4j.com/graphgist/holiday-resorts
+

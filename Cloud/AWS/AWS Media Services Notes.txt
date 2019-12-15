@@ -1,0 +1,7 @@
+Media Services
+============
+Elastic Transcoder
+Kinesis Video Streams
+MediaConnect
+MediaConvert
+MediaStore

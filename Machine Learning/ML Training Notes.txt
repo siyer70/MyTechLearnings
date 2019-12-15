@@ -1,0 +1,296 @@
+
+AI
+	Computer Vision - Image classification, self driving car
+	NLP - Chatbot, Entity Recognition, siri, Alexa
+	Robotics - Bomb Diffusion
+	
+
+
+why not deep learning for all machine learning problems
+	- complex
+	- costly
+	
+when deep learning
+	image recognition -
+	speech recognition
+	
+1 input layer
+1 output layer
+1 or more hidden layer(s)
+
+In the input layer, number of neurons = number of features 
+In the output layer, number of neurons = depends on the type of problem
+		In case regression = 1 neurons
+		In case binary classification = 2 neurons
+		In case multi classification = n neurons
+
+
+3 hidden layers are recommended
+keep the number of neurons in the all the layers
+
+epoch vs errors to determine the value for epoch
+
+sample parameters
+learning = 0.001
+epoch = 15 
+batch_size = 100
+display_step = 1
+n_hidden_1 = 256
+n_hidden_2 = 256
+n_input = 784
+n_classes = 10
+
+
+Optimization Technique
+	- Adhoc prop
+	- RMS PRop
+	- Gradient Descent
+	- Stochastic Gradient Descent
+
+Learning rate
+	
+
+Epoch
+
+cost function (loss function)
+	mse
+	cross_entropy
+
+	
+metrics = "mae""
+
+Activation (Transfer) functions
+RELU = Rectifier linear unit (transfer function) (<1 to 0, no changes for positive number)
+Linear
+sigmoid (-1 to 1)
+Tanah
+		
+1 epoch = 1 set of data
+
+goal of the every algorithms is to minimize the error 
+cost function (is used to determine the error rate) 
+	- mean square error
+
+CNN
+
+Filter + Pooling + ANN = CNN
+
+Convolution (feature map extraction) +
+	
+algorithms
+==========
+classification
+	- naive bayes
+	- k nearest neighbours
+	- decision trees
+	- random forest
+
+
+regression
+	- Linear regression
+		- single linear regression
+		- multiple linear regression
+	- Logistic regression
+	- Polynomic regression
+
+
+	
+clustering
+	- k means clustering
+
+association
+
+
+deep learning / neural networks (classification & regression)
+CNN - convolutional neural networks
+	- Face recognition
+		- it can recognize images
+		- compare images (apple or orange)
+		- it can tell whether person is sad or happy
+		
+RNN - Recurrent neural networks
+	- NLP
+	
+mnist without cnn
+ensemble
+
+xgboost	
+
+tools and libraries
+python, 
+	anakonda, 
+	pandas
+	scikit
+r, r studio
+
+deep learning is the concept and following ar some of best libraries
+
+theano
+keras (wrapper over tensorlfow)
+tensorflow (one of the best)
+torch
+affe
+MXNet
+CNTX (microsoft)
+
+ibm watson
+
+
+
+ml -> dl -> tensor flow - keras
+
+Python vs R
+	R simpler, statisticians & mathematician, better visualization
+	Java folks tend to go with Python
+	
+	
+GPU, TPU (Tensor processing unit)
+
+
+Python Distribution - Anaconda (spider ide built-in in anaconda) pycharm - ide
+anakonda - Jupyter notebooks
+
+Python libraries -> Numpy, Pandas, Matplotlib, scikit learn
+(flask for building web application in python)
+
+R libraries -> ggplot2
+r markdown
+
+Some good sources of data
+========================
+https://www.kaggle.com
+https://www.data.gov
+http://www.who.int/gho/en
+http://archive.ics.uci.edu/ml/index.php
+
+
+
+speech recognition (RNN)
+amazon alexa
+live.ai
+
+
+training: 60%
+validation: 20%
+test: 20%
+
+
+boosting
+ensemble learning
+
+feature scaling
+
+approaches
+mean
+strocastic 
+gradient descent
+
+
+j = error
+to bring down the error rates
+delta w = w - deriv j / deriv w
+
+global minima and local minima
+
+
+Steps
+=====
+Understand the business requirement and identify the output column
+Prepare (preprocessing)
+explore data
+feed data to algorithm to prepare a model
+test & tune model
+deploy model
+
+
+Data preparation
+================
+remove stastically insignifcant columns
+missing values
+categorical columns - numbers instead of strings 
+split data - train, validation, test
+feature scaling (normalization)
+
+
+Overfitting
+Feature Scaling
+Dimensional Reduction
+	Feature Selection
+		Visual Inspection
+		Backward Elimination
+	Feature extraction
+		Principal Component Analysis (derived columns)
+
+Eucledian Distance
+
+Algorithm Selection Criteria
+	Linear
+	Overfitting
+	Data
+	Outliers
+
+Indication of the result
+========================
+Confusion matrix (helps in classification problems)
+3 Categories here in the following example - 
+Predict Customer will buy x or y or z product
+x = 00
+y = 01
+z = 02 
+
+where row and column converge - it means that prediction is correct
+where it does not - it means that prediction is not correct
+- under-mentioned matrix shows 90% correct prediction - see diagnolly (40,30,20))
+- 4 cases where 00 is wrongly predicted as 01
+- 6 cases where 01 is wrongly predicted as 00
+- 2 cases where 02 is wrongly predicted as 00
+and so on
+
+	00	01	02
+	
+00	40	04	02
+01	06	30	01
+02	02	01	20
+	
+	- how many correct prediction
+	- how many false positives
+	- how many true negatives
+cap theorem - regression
+rsquare (helps in regression problems)
+adjusted rsqure (helps in regression problems)
+aic
+
+Data Scientist (Reasonable Maths, Reasonable programming)
+
+
+Clustering 
+	- number of clusters = elbow method
+	- wcss
+	
+	Algos
+		- K Means
+		- Hierarchical Clusters
+
+Ensemble learning (opinion from multiple models / algorithms)
+
+	Random Forest
+		Decision Tree
+
+	Entropy / Impurity (how pure is the segment)
+
+	Bagging and Boosting
+		XGBoost
+		ADABoost
+		GradientBoost
+		KaggleBoost
+
+
+RNN
+	lstm (long short term memory)
+	
+
+Courses	
+Andrew NG
+
+
+Kaggle Competition

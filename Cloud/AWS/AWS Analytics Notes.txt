@@ -1,0 +1,62 @@
+Analytics
+Athena
+EMR
+Kinesis
+	Background  - What is Streaming Data
+		- Streaming Data is data that is generated continuously by thousands of data sources in small sizes
+		-  small sizes = in the order of kilobytes
+		- examples
+			- transactional data (purchases from online stores)
+			- stock prices
+			- game data (as the gamer plays)
+			- social network data
+			- geospatial data 
+				for eg uber.com 
+					- where you are in map is streamed and uber calculates the fastest route to destination
+			- iOT Sensor Data
+	Kinesis - What is it?
+		- Kinesis is a platform on AWS to send your streaming data to
+		- Kinesis makes it easy for you to load and analyse streaming data
+	3 types of Kinesis
+		- Streams
+			- Producers -> Kinesis Streams <- Consumers
+			- by default Kinesis streams stores data for 24 hours - can store upto 7 days
+			- within Kinesis streams you have shards (partitions)
+			- producers data is written into those shards and consumers read from those shards
+			- typical consumers are EC2 instances which will analyse the streamed data
+			- once stream data is processed / analysed, then you can store the processed data 
+				- for example in in S3 / DynamoDB / EMR / RedShift
+			- 5 transactions per second, upto a total data read out of  2 MB
+			- 1000 records per second for writes
+			- upto a maximum of total data write rate of 1MB per snood
+			- the data capacity of your stream is a function of the number of shards that you specify for the stream
+			- the total capacity of the stream is the sum of the capacities of its shards
+		- Firehose
+			- Producers -> Kinesis Firehose -> S3/Redshift/Elasticsearch Cluster
+			- producers can be EC2, smart phones, laptop, iOT Sensors
+			- inside Firehose there is no persistent storage - data needs to be analysed as it comes in
+			- as soon as the data comes in - it can trigger a lambda function to analyse 
+			- analysed data could be output to s3 or to redshift (via s3) or to elastic search cluster
+			- 
+		- Analytics
+			- Producers -> Kinesis Streams / Kinesis Firehose -> S3/Redshift/ElasticSearch Cluster
+			- Analyse the data in Kinesis, then use Kinesis Analytics - it could use either Streams / Firehose
+CloudSearch
+Elasticsearch Service
+Data Pipeline
+AWS Glue
+	- Cloud Optimised ETL Service
+	- It allows you to organize locate move and transform all your datasets across your business
+	- USPs
+		- serverless
+			 - it will automatically spin up the servers internally and execute the scripts on your behalf
+		- schema inference
+			- just point to the data source and AWS will infer the schema
+				- will store it in centralised catalog as table definitions
+				- it will use the table definitions to infer the schema to read, parse and query your data
+		- autogen ETL scripts
+			- once you point to the centralised catalog, 
+				- it will generate ETL scripts to extract and transform your data into Redshift DW
+				- adapts to the changes in the input source or in output
+				- you can customise the generated scripts using the interface provided in console or edit it yourself
+

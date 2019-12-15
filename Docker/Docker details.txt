@@ -1,6 +1,7 @@
 Docker id: gmail id without @gmail.com
 Docker password: usual with !
 
+Learning chapters in Folder: /Users/chasrini/DockerForJava
 
 docker commands
 
@@ -10,3 +11,425 @@ docker pull <username>/<image>:<tag>
 docker build -t <username>/<image>:<tag>
 docker push <username>/<image>:<tag>
 docker run (to complete)
+
+Docker is not virtualisation technology, it is application delivery technology
+see the docker architecture in the current directory
+	DockerAsApplicationDeliveryTechnology
+
+running containers in interactive mode and with tty (-it option)
+---------------------------------------------------
+run it in the interactive mode -i 
+and assign the tty so that we can press ctrl+c to stop it
+
+docker container run -it jboss/wildfly
+
+docker container stop <container id>
+
+but if you say
+docker container ls -a
+(it will list that container, so the container needs to be removed explicitly)
+
+
+stop and remove container command
+
+docker container rm -f <container name or container id>
+
+
+mapping the port and volume
+port mapping ->
+docker host port : exposed container port (for accessing the service)
+
+deploy the war file on the wildfly server using the volume mapping (-v option)
+volume mapping ->
+local filesystem folder/<war file name.war>:<wildfly installation/deployments/filename>
+
+docker container run -it --name web -p 8080:8080 -v `pwd`/webapp.war:/opt/jboss/wildfly/standalone/deployments/webapp.war jboss/wildfly
+
+tail the logs
+docker container logs web -f
+
+inspect the container
+docker container inspect <tag name>
+	- provides lot of details covering networks, network settings, mount points, ports
+
+For specific section of the json output of the inspect command, you can use the format
+eg:
+docker container inspect --format '{{json .Mounts}}' <tag name>
+(this will list only Mount section of the json)
+
+
+access the app
+curl http://localhost:8080/webapp/resources/persons
+
+Workflow
+
+Docker Run
+01. You use Docker client to run a container by executing "Docker run ..."
+02. Under the hood it makes an http call to docker host (docker engine)
+03. Docker host listens on a port and receives the run command
+04. Docker host looks for the specific image
+05. If the image not found
+	- it downloads the image from Registry
+		- typically docker hub (hub.docker.com)
+		- or org specifc trusted registries
+		- or typically org internal JFrog Docker Registry
+06. Once the image is downloaded in the Docker host, 
+	- it executes the image in one or more containers
+
+
+docker-compose
+- key use case - Running multi-container application using docker compose
+	- Typically distributed applications would have
+		- Web Server(s)
+		- Application Server(s)
+		- Caching component(s)
+		- Messaging Server(s)
+		- Database Cluster
+	- you could package each of them as a separate image and run one or more instances
+	- you can define those services and their dependencies in docker-compose.yml
+	- see 
+		- docker-compose.yml (chapter3)
+		- docker-compose-override.yml
+
+Swarm mode
+- Natively managing a cluster of Docker Engines called a swarm
+- Docker CLI to create a swarm, deploy apps and manage a swarm
+	- swarm mode needs to be enabled, it is an optional feature
+- No SPOF (Single point of failure)
+- Declarative state model
+- Self Organising and Self healing
+- Service discovery, load balancing and scaling
+- Rolling updates
+
+See Chapter 4 swarm-cluster.sh to see how to create a swarm cluster
+
+Swarm Cluster with 3 Managers and 3 workers
+
+#note the first time you need to call docker swarm init
+docker-machine ssh manager1 \
+        "docker swarm init \
+        --listen-addr $(docker-machine ip manager1) \
+        --advertise-addr $(docker-machine ip manager1)"
+
+#subsequent docker-machines will call docker swarm join with token
+docker-machine ssh manager2 \
+        "docker swarm join \
+        --token `docker-machine ssh manager1 "docker swarm join-token manager -q"` \
+        --listen-addr $(docker-machine ip manager2) \
+        --advertise-addr $(docker-machine ip manager2) \
+        $(docker-machine ip manager1)"
+
+docker-machine ssh manager3 \
+        "docker swarm join \
+        --token `docker-machine ssh manager1 "docker swarm join-token manager -q"` \
+        --listen-addr $(docker-machine ip manager3) \
+        --advertise-addr $(docker-machine ip manager3) \
+        $(docker-machine ip manager1)"
+
+#notice the docker swarm join-token worker
+docker-machine ssh worker1 \
+        "docker swarm join \
+        --token `docker-machine ssh manager1 "docker swarm join-token worker -q"` \
+        --listen-addr $(docker-machine ip worker1) \
+        --advertise-addr $(docker-machine ip worker1) \
+        $(docker-machine ip manager1)"
+
+docker-machine ssh worker2 \
+        "docker swarm join \
+        --token `docker-machine ssh manager1 "docker swarm join-token worker -q"` \
+        --listen-addr $(docker-machine ip worker2) \
+        --advertise-addr $(docker-machine ip worker2) \
+        $(docker-machine ip manager1)"
+
+docker-machine ssh worker3 \
+        "docker swarm join \
+        --token `docker-machine ssh manager1 "docker swarm join-token worker -q"` \
+        --listen-addr $(docker-machine ip worker3) \
+        --advertise-addr $(docker-machine ip worker3) \
+        $(docker-machine ip manager1)"
+
+# ls command to list the nodes
+docker-machine ssh manager1 "docker node ls"
+
+
+
+swarm mode: Routing Mesh
+
+- Load Balancers are host aware and not container aware
+- swarm mode introduces the container-aware routing mesh
+- it reroutes traffic from any host to a container
+	- reserves a swarm-wide ingress port
+	- uses DNS based service discovery
+
+01. External LoadBalancer no longer need to know where the containers are running
+	- they can send the request to any node
+02. Routing Mesh will then routes the traffic to the appropriate node 
+	- where the container is running                        
+	- this though introduces additional hop but still efficient as it uses ipvs
+
+Once the docker-machines are created in separate hosts to form the cluster
+- you can create services along with replicas
+
+swarm mode: replicated service (below command creates 3 replicas of the service)
+docker service create --replicas 3 --name web -p 8080:8080 jboss/wildfly
+
+(note the swarm wide ingress port 8080 mentioned in the above command
+i.e. every node in the swarm cluster will have this port exposed to the above service)
+
+you can then run the following to list all the services
+docker service ls
+
+
+you can get more details on the service by using the following command
+docker service inspect <tag name>
+
+Note that
+each replica of the service in the above command is a task
+each task is essentially a container
+
+you can list the tasks with the following command
+docker service ps <tag name>
+for eg: docker service ps web
+
+you will see similar to the following
+id	name	image	node	desired state	current state
+random web.1	jboss/wildfly:latest	manager3	Running	Running
+string
+
+random	web.2	-do-			worker1		Running	Running
+string
+
+(Manager can be configured to run as a dedicated or non-dedicated manager)
+If run as a non-dedicated manager they can also behave like additional workers in addition to being a manager - in other words they can execute containers
+
+you can simply scale the services/components
+
+docker service scale <tag name>=<number of instances>
+docker service scale web=6
+
+to check whether at all times docker manager is able to maintain the desired scale of 6, we can kill a container
+docker container rm web
+and within seconds you will see a new container spawned
+
+you can stop a particular node where multiple container might be running
+docker-machine stop <node name>
+docker-machine stop worker1
+
+this will spawn new container(s) in the new node
+
+
+you can do a rolling update
+docker service update <tag name> --image <image ref> --update-parallelism 2 --update-delay 10s
+
+let say you have create webapp service
+docker service create --name webapp --replicas 6 -p 8080:8080 arungupta/wildfly:1
+
+and later you want to upgrade the version to 2
+docker service update webapp --image wildfly:2 --update-parallelism 2 --update-delay 10s
+
+(meaning update two images at a time with a delay of 10s before moving to the next)
+
+	
+you can jump to individual nodes like this
+docker-machine ssh <node name>
+docker-machine ssh manager1
+
+
+you can run commands on specific docker node
+docker-machine ssh manager1 "docker service ps -f \"desired-state=running\" web"
+(show all the tasks that are running")
+-f flag stands for filtering the output
+
+the following command lists all the services along with the number of replicas for each
+docker service ls 
+
+
+Deploying multi container app on Swarm mode cluster (Multi-Node Cluster)
+docker stack deploy --compose-file=docker-compose.yml webapp
+
+other commands
+docker stack ls (list all stacks along with the number of services in each stack)
+docker stack ps (list all tasks in the stack)
+docker stack rm (remove the stack)
+docker stack services (list the services in the stack)
+
+after stack deployment - you can execute the following:
+docker stack ls
+docker services ls
+
+removing the node for maintenance
+docker node update --availability drain <node name>
+(this command will reschedule the impacted containers in other available nodes)
+
+for node name, execute the following
+docker node ls
+
+
+alternatively if you do not want to reschedule, but want to troubleshoot in the same node
+docker node update --availability pause <node name>
+(use pause instead of drain - this allow you to debug in that node)
+
+once you are done with troubleshooting/debugging, then activate the node back
+docker node update --availability active <node name>
+
+
+Create and using labels
+
+DOCKER_OPTS="--label=wildfly.storage=ssd"
+
+docker daemon --label wildfly.storage==ssd
+
+docker service create --replicate=3 --name=web --constraint=engine.labels.wildfly.storage==ssd jboss/wildfly
+
+subsequently in any other docker service command, if you don't specify the constraint, then the command will only be executed on nodes where there are no label
+
+
+swarm mode Global Service
+- if you want to execute single instance of the container on each node, you can use the global service
+- for example: 
+prometheus is logging service that you may want to execute single instance on each node
+
+docker service create --mode=global --name=somename prom/prometheus
+
+Storage in Docker
+
+Per Container storage
+Implicit per container storage - Implicit sandbox for each container
+Directory is in /var/lib/docker/volumes
+- use cases 
+	Temporary storage
+Downsides
+	- Directory is unavailable, when
+		- container crashes or node crashes
+		- container is removed
+	- It cannot be shared with other containers
+
+
+
+Explicit per container storage - same as above
+except that volume is explicitly created using Docker Volume command
+eg:
+docker volume create my_volume
+
+then while running container, you can specify this volume
+docker container run -d --name somename -v my_volume:/opt/couchbase/var <imageref>
+
+you can then inspect the mount section of the container
+docker container inspect --format '{{json .Mounts}}' somename | jq
+
+(install jq using brew install jq - if not already installed)
+
+remove the above by
+docker container rm -fv somename
+
+then explicitly remove the volume
+docker volume rm my_volume
+
+
+Per Host Storage
+- Data is stored in named directory in host
+- Withstands container crashes (as the data is stored at host level not container level)
+- Directory is unavailable if the host itself crashes
+- Multiple containers can read/write to the volume
+- Any changes to the volume are not part of the image
+	If the container is hosted in different node then those changes are lost
+
+Shared Host Storage
+	- Distributed storage includes distributed filesystems such as Ceph, GlusterFS and network file system
+	- You can adapt naming conventions and namespaces so that containers have access to multiple hosts
+	- Mount point is available on all nodes
+	- Directory is available if container or node crashes
+	- Multiple containers can read/write to the volume
+
+(all of the different storage options are depicted in single image in the docker folder)
+
+Docker Volume Plugin
+	- "Batteries included but replaceable"
+	- Includes default driver for host based volumes
+	- Enables containers to be integrated with external storage systems
+		For Example: Amazon EBS, Azure Storage and GCE Persistent Disk
+
+	- Includes default local volume - this what is being used for per-container storage (be it Implicit/Explicit)
+		- You can then install additional plug-ins that would comprises of
+			- Plugin Client and Plugin Daemon
+				- It allows you to manage the lifecycle of the volume
+				- It provides access to multiple storage backends
+
+(see image file "Docker volume plugins for accessing storage back ends" in directory)
+
+Portworkx
+	- Easy to deploy container data services
+	- Provides persistence, replication, snapshots and encryption
+	- Provides "Container Granular Volumes"
+		- It can take multiple EBS volumes per host 
+		- Aggregate the capacity and derive them to provide
+			- Container Granular Virtual soft volumes per container
+
+	- Protects data
+		- At Block Level
+		- Across multiple compute instances
+		- Across Availability Zones
+
+	- Provides Container Granular Snapshots, class of service, tiering on top of available physical volumes
+
+	- Portworkx itself is deployed as a container and integrated with orchaestration tools
+
+	- DevOps can programmatically provision container granular storage on any of the property such as size, class of service, encryption key
+
+	- Portworx comes in 2 flavours (PX-DEV open source developer version and Enterprise version)
+	
+	(PX-Dev component includes portworx client which can then be used to access external storage back ends such as EBS volumes in AWS)
+
+	- See chapter 5 for setting up 
+			- portworx, 
+			- ec2 instance
+			- creating & associating ebs volume with ec2 instance
+			- installing docker
+			- create etcd cluster
+			- make root mounted volume shareable
+			- use lsblk to check that the volume is attached to the ec2
+			- start px-dev container
+
+		- Portworx is installed in Linux box
+
+	- sudo /opt/pwx/bin/pxctl status (should see PX is operational and other info like total capacity of the storage and used etc)
+
+
+	create a volume using portworx driver (-d pxd)
+	docker volume create -d pxd -o size=10G -o fs=ext4 --name cbvol
+
+	then run the container with this volume
+	docker container run -d --name db -p 8091:8091 -v cbvol:/opt/couchbase/var <image ref>
+
+	login to couchbase web console and create a bucket
+
+	remove the container
+
+	then cleanup
+
+Monitoring
+
+docker container stats command
+
+docker container stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" <tag name>
+docker container stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" web
+
+
+Remote api
+curl --unix-socket /var/run/docker.sock http://localhost/containers/db/stats
+
+using this data, you can build your own fancy dashboard
+
+
+docker system events
+
+(this command can be used to show system events on the console - for example, you can start new container in a separate window and you can see the system events on this console)
+
+
+run prometheus container (refer to chapter 6)
+go to prometheus folder in the home directory
+see the prometheus.yml (copied from chapter 6)
+docker container run -d --name metrics -p 9090:9090 -v `pwd`/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+
+
+cAdvisor (from Google) is another option for monitoring 

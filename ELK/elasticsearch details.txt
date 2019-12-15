@@ -149,3 +149,98 @@ Patterns
 https://github.com/logstash-plugins/logstash-patterns-core/blob/master/patterns/grok-patterns
 
 
+
+
+
+
+Elasticsearch Architecture
+--------------------------
+Source:
+https://www.youtube.com/watch?v=YsYUgZu9-Y4
+
+Jist of the content
+- Index is split into shards
+- every shard is a self-contained lucene index of its own (Lucene - a full text search library on which ElasticSearch is built on)
+- each shard may be on a different node in a cluster
+- every document is hashed into a particular shard
+- you can scale the architecture by adding more machines to the cluster and more shards on these machines to split the load efficiently
+- each node can have attributes that can be leveraged to specify that
+	- it is running in which zone, which rack
+	- it is running in a powerful machine because of a popular index
+- cluster has so called "cluster state" that is replicated in every node. It has
+	- Mappings (can be thought of as schema that specifies how a field has its text processed)
+	- shard routing table - any node in the cluster knows how to route search requests
+	- master node
+
+Case study
+An Index with 2 primary shards and 2 replicas
+
+- write requests are sent to primary shards which are then replicated to replicas
+	- so write requests are bottlenecked to number of primary shards that you have
+	- Number of shards can be specified up front via the put request using REST / HTTP
+		PUT /<index_name> 
+		{
+			"settings" : {
+				"number_of_shards" : 3,
+				"number_of_replicas" : 1
+			}
+		}
+		total number of shards = 
+			3 primary 
+			3 replicas i.e. (1 replica for each primary)
+			= 6 shards
+- read requests can be sent to any of the primary / replicas subsequently
+- If any of the primary node goes down, one of the other node can be elected as primary and can continue to serve requests
+- Odd number nodes are preferred for resiliency / fault tolerance i.e. a minimum of 3
+
+Limitations
+- Number of primary shards cannot be changed later on
+	- but you can add more replicas at any point in time to increase the read capacity
+	- worst case you can reindex your data
+- You cannot split one shard into two
+- when querying on multiple shards, results are obtained from each shard and then collated
+	- since shard can be across nodes, this would involve transfer over the network
+
+- Trade Off - having two few shards or too many shards - both are problematic - you need to balance between the two
+
+Lucene Index
+- Comprises of
+	- Segments (Mini Indexes)
+		Segment Data Structure comprises of
+			- An inverted index
+			- Stored fields
+			- Document Values and so on
+- when searching within Lucene index, results are obtained from each segment and then colloated
+
+Inverted index
+
+Term		Frequency	Documents
+secret		3		3
+config		5		3, 5
+partition	7		1, 2, 5
+<------------------------>	<--------->
+Sorted Dictionary		Postings
+
+Process
+a. lower case
+b. remove punctuations
+c. tokenize on white space
+
+when you receive a query, you first lookup in sorted dictionary to find the candidate terms and then use the postings i.e. intersect / union the result based on the query
+
+Search problems
+
+Auto complete - find words starting with c 
+Resolution: you can do a binary search here
+
+Substring / wildcard search
+- *suffix - you can reverse the string i.e. xiffus and then search
+
+Geolocations (longtitude and lattitude)
+- generate a geo hash combining both
+
+guid range search
+123 - {1 hundered, 12 tens, 3 ones} - 
+
+
+

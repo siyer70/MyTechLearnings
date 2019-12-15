@@ -1,0 +1,6 @@
+On macOS Sierra & OSX to start/stop/restart MySQL post 5.7  from the command line:
+
+sudo launchctl load -F /Library/LaunchDaemons/com.oracle.oss.mysql.mysqld.plist
+
+
+sudo launchctl unload -F /Library/LaunchDaemons/com.oracle.oss.mysql.mysqld.plist
