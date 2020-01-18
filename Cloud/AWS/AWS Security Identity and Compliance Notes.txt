@@ -122,6 +122,10 @@ Cognito - Web Identity Federation Service
 		- Federation means
 			- combining or joining a list of users in one domain (such as IAM) with 
 				- a list of users in another domain (such as Active Directory or Facebook)
+			- Federation allows external identities (Federated Users) to have secure access in your AWS account
+				- without having to create any IAM users
+
+				- External Identities can come from corporate identity provider (AD, IPA) or web identity provider (facebook, amazon etc)
 	- Identity broker
 		- A service that allows you to take an identity from point A and join it (federate it) to point B
 	- Web Identify Federation lets you give your users access to AWS resources once
@@ -173,7 +177,47 @@ Cognito - Web Identity Federation Service
 			- user is then able to access the AWS resources that the IAM role supports
 
 Security Token Service
-	- Example scenario
+	- Allows to create temporary credentials
+
+	use case
+	- When developer working on his local environment and needs access to S3 in aws, 
+		- he can be allowed to use sts to generate temporary credentials for accessing s3
+
+	(follow the below to implement this use case)
+
+	- Step 1: create a cross account role in IAM
+		- while creating role, select the option "Another AWS Account" and specify the account id
+		- in the permissions page, specify s3 and select s3readonly policy
+		- specify a name for the role and create a role say ("STSRole")
+	- Step 2: Attach a S3ReadOnly policy to that IAM Role
+	- Step 3: Allow user to Assume Role with STS
+		- For a selected user, click "Add inline policy" link in the user page
+		- Choose a service - select STS
+		- Actions - AssumeRole
+		- Resources - add arn of the previous created role in step 1
+	- Step 4: Remove all other policy from user except Assume Role
+		- this step is only to ensure that no other action privilege is conflicting with our intended actions
+
+	In the AWS Credentials file (available in file ~/.aws/credentials), add a section
+
+	[myprofile]
+	arn = <arn of the sts role>
+	source-profile = default
+
+	(default profile is the one that would be inferred when you run aws cli) 
+
+	then you can run aws s3 commands with the profile 
+	aws s3 ls --profile myprofile
+
+
+	this command will then generate a temporary credential (access key, secret key, token) for the current user specified in default section
+
+	internally it will execute the following command to generate temporary credential
+	aws sts assume-role --role-arn <arn of the sts role created in step 1> --role-session-name "somesessionname"
+
+
+
+	- Other Example scenarios
 		- User needs to access a reporting application that enables access to user’s S3 bucket
 		- User needs to be authenticated using organisation’s active directory
 	- Flow works like this
@@ -219,7 +263,122 @@ Macie
 			- identify critical, sensitive and security focused data - API keys, secret access keys, PII / PHI data
 			- detect changes and alterations to security policies and access control lists
 			- Maintain compliance requirements for various regulations
-Secret Manager
+
+AWS Secret Manager
+	- Enables customers to rotate, manage, retrieve db credentials, API keys and other credentials throughout their lifecycle
+	- use versioning so applications do not break when secrets are rotated
+	- Fine grained access control on who can access the secrets with the help of IAM and resource based policies
+
+	Options
+	- Credentials for RDS Database (Lambda function is created automatically for secret rotation and the logs are sent to cloudwatch logs)
+	- Credentials for other database (Specify server address, database name, port number - Lambda function needs to be created manually for secret rotation)
+	- Other type of secrets (for eg: API Key)
+
 Certificate Manager
 Directory Service
-WAF & Shield
+
+Web Application Firewall (WAF)
+- AWS WAF is a web application firewall service that helps protect your web apps from common exploits that could affect app availability, compromise security, or consume excessive resources.
+- AWS WAF is a web application firewall that lets you monitor the HTTP and HTTPS requests that are forwarded to an Amazon API Gateway API, Amazon CloudFront or an Application Load Balancer.
+- AWS WAF also lets you control access to your content. Based on conditions that you specify, such as the IP addresses that requests originate from or the values of query strings, API Gateway, CloudFront or an Application Load Balancer responds to requests either with the requested content or with an HTTP 403 status code (Forbidden).
+
+At the simplest level, AWS WAF lets you choose one of the following behaviors:
+- Allow all requests except the ones that you specify
+- Block all requests except the ones that you specify
+- Count the requests that match the properties that you specify
+
+Steps:
+- Create one or more condition(s)
+- Using the conditions create one or more rules (with new WAF, you can also create Rule Groups)
+- Create Web ACL and apply the rules created earlier - if the rules match then you can choose one of the earlier stated behaviours
+- Specify CloudFront / ALB / API Gateway in the web acl and the underlying aws resource of CloudFront / ALB / API Gateway
+(You would need to precreate the resources (for eg: ALB) before creating web acl so that you can specify the reference of that resource in web acl)
+
+
+AWS Shield
+- Protects your workloads from Distributed Denial Of Service (DDoS) attacks
+- Two types
+	- Shield Standard (protection against the most common network and transport layer DDoS attacks)
+	- Shield Advanced (near real time visibility into the attacks that might be occurring - gives customers 24 x 7 access to AWS DDoS response team (DRT)
+		- During the attack, if the infrastructure has scaled, AWS will return the credits (only applicable for Route53, ELB, CloudFront)
+		- Automated application (Layer 7) traffic monitoring
+		- Expensive ($3000 per Organisation and additional cost)
+
+
+
+Inspector
+- CVE (Common Vulnerabilities & Exposure)
+- CIS (Center for Internet Security) Benchmarks on OS Security 
+- Security Best Practies
+- Runtime behaviour and analysis
+
+
+- Agent is installed on servers
+- Scans and produces results
+	- for CVEs, scans for vulnerabilities in all the packages
+	- for OS, checks the server is following the hardening rules as per CIS benchmarks (not so mature product)
+- Security Best Practices (supports the following 9 rules)
+	- Disable root login via SSH
+	- Support SSH V2 only
+	- Disable Password Authentication via SSH
+	- Configure maximum password age and minimum high
+	- Configuring password complexity
+	- Enable ASLR and DEP
+	- Configure permissions for system directories	
+- Runtime behaviour and Analysis
+	- Insecure client protocols
+	- Unused listening TCP ports
+	- Insecure server protocols
+	- Software without DEP
+	- Software without Stack Cookies
+	- Root process with insecure permission
+Other tools that can be compared with Inspector
+- Nessus
+- Nexpose
+- AWS Inspector
+- OpenScap
+
+Trusted Advisor
+- Analyses your AWS environment provides best practice recommendations in 5 major categories:
+	- Cost Optimisation
+		- Idle / Under utilisation of
+			- RDS DB Instance
+			- EC2
+			- Load Balancers
+		- Unassociated Elastic IP Addresses
+	- Performance
+		- CloudFront Content Delivery Optimisation (s3 not using CloudFront)
+	- Security
+		- Security Groups - Unrestricted access
+		- ELB Listener Security - not using recommended configurations for encrypted comm
+		- S3 Bucket Permission
+	- Fault Tolerance
+		- RDS instance instance in Single AZ
+		- EC2 Instances balancing across AZs
+		- Age of snapshot of EBS
+	- Service Limits
+		- ASG Limit Checks when it reaches x% (say 80%) threshold
+		- Similarly DynamicDB provisioned throughput reach limit
+		- CloudFront stack limit
+
+- Types of Checks
+	- Core Checks
+		- Security Group - Specific Port Unrestricted
+		- IAM Use
+		- MFA on Root Account
+		- Performance: Service Limits
+
+	- Access to All Trusted Advisor Checks ranging from
+		- Security, Performance, Fault Tolerance & Cost Optimisation, Service Limits
+	- Get weekly updates via email as well
+
+ 
+Generating S3 Pre-signed url
+aws s3 presign <uri>
+aws s3 presign <bucketname>/<objectname>
+
+
+SAML (Security Assertion Markup Langugage)
+- It is an secure XML based communication mechanism for communicating identities across organisations
+- It eliminates the need to maintain multiple authentication credentials such as passwords in multiple locations
+

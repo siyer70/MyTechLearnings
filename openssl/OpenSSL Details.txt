@@ -1,0 +1,244 @@
+A CA file has been bootstrapped using certificates from the system
+keychain. To add additional certificates, place .pem files in
+  /usr/local/etc/openssl@1.1/certs
+
+and run
+  /usr/local/opt/openssl@1.1/bin/c_rehash
+
+openssl@1.1 is keg-only, which means it was not symlinked into /usr/local,
+because openssl/libressl is provided by macOS so don't link an incompatible version.
+
+If you need to have openssl@1.1 first in your PATH run:
+  echo 'export PATH="/usr/local/opt/openssl@1.1/bin:$PATH"' >> ~/.bash_profile
+
+For compilers to find openssl@1.1 you may need to set:
+  export LDFLAGS="-L/usr/local/opt/openssl@1.1/lib"
+  export CPPFLAGS="-I/usr/local/opt/openssl@1.1/include"
+
+==> Summary
+🍺  /usr/local/Cellar/openssl@1.1/1.1.1d: 7,983 files, 17.9MB
+
+
+Encryption - aim of encryption is to keep the data confidential
+
+1. Uses Encryption Algorithm or Cipher Algorithm
+2. Uses a secret key that is shared between two parties
+
+with the above points, you can convert plain text to encrypted text
+
+you can use the secret key (in some cases the same secret key) to decrypt
+back to plain text
+
+Symmetric key - same key is used for both encryption and decryption
+	- Keys are randomly generated
+Asymmetric key - uses public key and private key for encryption and decryption
+	- Keypairs are related (not randomly generated)
+
+Encryption techniques usually works in two way
+They 
+- either encrypt in blocks i.e. blocks of data (usually 64 bit or 128 bit)
+- use stream cipher - one byte or one bit at a time
+
+Block Cipher 
+- is slower than Stream Cipher and generally used for storing files.
+- uses substitution or transposition math operations - rearranging them again and again to make it harder to decrypt
+- well known algorithms
+	- DES
+		- uses smaller key size 64 bit 
+		- 56 bit in practice as 8 bit is used for parity
+		- because of smaller key results in small keyspace
+		- which paves the path for brute force method to crack
+		- hence weak
+		- ecb - electronic code block 
+		- using ecb is how des joins encrypted bits
+	- 3DES
+	- AES (used in many applications/protocols) 
+		- wifi, https, firewalls, bitlocker etc
+		- defacto standard now
+
+examples:
+openssl enc -des-ecb  -in sample.txt -out encfile -k 54321564
+openssl enc -d -des-ecb -in encfile -out decrypted.txt -k 54321564
+(provide the same secret key during encryption and decryption)
+
+Stream Cipher is used for real time data (1 bit or 8 bit of data at a time, so small blocks of data)
+
+for example to generate a 8 byte (64 Bit) key - enter the command
+openssl rand -hex 8
+07b34f0e480d31ca
+
+if you use 2 to the power 3 bit key (8 bit  - you have 8 possibilities
+
+
+Hash functions - are used everywhere - where it requires
+	- Authentication and Integrity
+		- Examples: 
+			- DB Password, blockchain, music files downloaded
+	- example hash functions
+		- MD5
+			- Also called Message Digest
+			- it takes any length of input
+			- produces 128 bit output (32 hexadecimal chars)
+			- 2 ^128 combinations output
+			- hence considered computationally infeasible
+			- irreversible
+			- Often used for integrity check
+			- many mp3 download sites provide md5 hash
+			- this hash is used to compare the md5 of downloaded
+			- if hash is same, file is not compromised/modified
+			- Not used anymore
+
+		- SHA256
+			- produces 256 bit output (much stronger than md5)
+
+you can check the speed by
+openssl speed md5
+(5 million hashes in a second, with GPU you can do several folds more)
+
+openssl sha256 DockerOverview.png 
+SHA256(DockerOverview.png)= 08087bbc62012d95f11b484c47dab7aacb84faa1f64e022266418c42da0852db
+
+Hashing and Encryption use case
+- used to ensure that a message has not been tampered with when received
+- for example:
+	- side a 
+		- takes a message
+		- hashes the message (say using md5)
+		- encrypts the hash (say using des using a shared secret)
+		- sends the message + encrypted hash to side b
+	- side b
+		- receives the message + encrypted hash
+		- hashes the message (say again using md5) - say hash2
+		- takes the hash2
+		- decrypts the encrypted hash sent by side a - say hash1
+		- compares hash1 with hash2
+		- if same, then message is not tampered with
+	Note: this solution does not provide confidentiality
+		(since the message itself is encrypted)
+
+md5 sample.txt | awk '{print $4}' > samplemd5.txt
+
+- another use case of hashing is in passwords
+	- plain text passwords are hashed using salt
+		- for example: 
+			- original password = hello
+			- after salting = as82shello
+			- then hashed
+			- salting adds a new level of computation power
+				(in order to expose hash)
+
+
+
+Public key cryptography
+=======================
+- 1976 first algorithm - Diffe Hellman	algorithm
+- 1978 RSA algorithm (used till date) - Rivest-Shamir-Adleman
+
+- Uses Keypair (1 key for encryption and other for Decryption)
+- both keys are related and specific algorithms are used to produce keypair
+
+Use case for PKC
+- Authentication and Confidentiality
+
+
+Goal
+- Openssl to generate a private key to request a certificate
+- How public and private keys are used together to 
+	- authenticate the user
+	- shared keys between servers and browsers
+
+
+- User who generates the keypair would be the only person knowing private key
+- public key generated can be distributed and shared with others
+- both keys can be used for encrypting and decrypting
+
+- If the message was encrypted using my private key
+	- I'm the owner of the message
+
+- The process of proving who you are 
+	- using the private key for authentication 
+		- is used in digital signature
+
+- private keys are used for digital signatures (in emails, certificates)
+	- Digital Signature
+		- how do you sign and prove that you are the owner of the msg
+
+	- Hash functions are used with private keys in multiple use cases
+		- one of the use case is digital signing
+
+	- side a 
+		- generates private and public key
+		- sends public key to side b
+		- takes a message
+		- hashes the message (say using sha256)
+		- encrypts the hash (using his private key)
+		- sends the message + encrypted hash to side b
+	- side b
+		- receives the message + encrypted hash
+		- hashes the message (say again using md5) - say hash2
+		- takes the hash2
+		- decrypts the encrypted hash using user a public key (hash1)
+		- compares hash1 with hash2
+		- if same, then message is not tampered with
+
+- private and public keys are rarely used for encrypting large files
+	- as they are very slow as compared to symmeteric keys
+
+- PKC is also used for key exchange mechanism and authentication
+	- to share secret session keys between two parties
+	- say between browser and server
+			- browser and server decides which cipher to use
+	- (session keys here referring to symmetric key)
+
+- HTTPS (between Browser and Server)
+		- Server generates public and private key
+		- Server lets the browser know its public key (we will see how later)
+		- Server decides with browser which cipher to use (AES 128 etc)
+		- Server generates a random key & encrypts it using its private key
+		- This random key (symmetric key) is used for encrypting the data
+		- Server sends the encrypted random key over the network
+		- Thus confidentiality and key exchange is achieved using PKC + Symmetric key
+
+- How do we ensure Web Server who it claims to be
+	- In other words, how to ensure the public key actually belongs to server
+	- It is done using digital certificate
+	- A digital certificate certifies the ownership of the public key
+	- The server generates the public and private key and goes to Certificate Authority (CA)
+	- And tells CA that here is my public key, please certify the certificate
+	- Authority verifies the identity
+	- Once it is verified, it issues a Digital certificate
+		- A digital certificate here 
+			- is a hash of 
+				- Server's Public Key
+				- ID and time (validity)
+			- this hash is further encrypted using CA's private key
+
+		- This certificate then becomes a proof that it comes from legit CA
+
+	- Once the certificate is obtained
+		- Subsequently when browser contacts the web server
+			- Server sends its certificate to browser
+			- Browser verifies the certificate
+				- In every OS, there are dozens of CA public keys
+				- this is then used to decrypt the digital signature
+				- it then gets the hash value of server's (1)
+					- public key
+					- server id
+					- time stamp
+				- it then hashes the same info in the certificate (2)
+				- then compares both (1) and (2)
+				- if matches, then the server is verified
+				- and it also now possess the server's public key
+
+
+Generate private key
+openssl genrsa -out privatekey.pem
+(default key length is 2048 bits)
+
+Create your certificate & Send your CSR - (Certificate signing request)
+openssl req -new -key privatekey.pem -out server.pem
+
+Certificate format is x509
+
+Self Sign your certificate
+

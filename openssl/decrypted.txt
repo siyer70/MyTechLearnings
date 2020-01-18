@@ -1,0 +1,1 @@
+hi this is sample text message for encyrption using des-ecb. After encryption you can see the encrypted text.

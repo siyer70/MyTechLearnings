@@ -1,0 +1,588 @@
+ZAP
+---
+Personal Proxy 
+	- It intercepts the http/https traffic between the browser and target
+	- Similar to Burp Suite for this feature but works differently
+Active & Passive Scanners
+	- Passive Scanners just examines requests and responses
+	- Passive does not perform any attacks
+	- Active scanners does a range of attacks
+		- Spidering / Crawling
+		- Fuzzer
+		- Generates Reports on the observed issues
+		
+
+Target
+1. Application
+2. Person
+3. System
+
+Information Gathering
+======================
+Passive
+	(you don't interact with target host directly / anonymously)
+	- Identifying IP addresses from sub-domain
+	- Identifying external or third party sites
+	- Identifying people related to the target
+	- Identifying technologies
+	- Identifying content of interest
+	- Identifying vulnerabilities
+
+	Sources: 
+		- web / mail archives
+		- social networking
+		- search engines 
+
+
+Active
+	- Scan on the target systems
+	- Sources
+		- Web archives
+		- Scanning ports and services
+		- Search Engines
+
+
+Other sources
+WhoIs Database for site and admin details
+	- DNS Server, Domain name details, location, admin, phone/fax/email
+	whois tools
+	- DomainTools (whois.DomainTools.com)
+	- WhoisNet (www.whois.net)
+	- WHO.IS (www.who.is)
+	- Linux whois command
+
+Banner
+
+Search Engines (Information that can be obtained using search engines)
+- Sensitive folders
+- username, password, email address
+- server or system vulnerabilities
+- files containing critical information
+- login pages
+
+Google hacking / Google docking
+- Computer hacking tool that uses google search and other google apps
+- Uses advanced operators of google search
+- Popular examples are finding specific versions of vulnerable websites
+- www.google.com/advanced_search - for advanced operators - some of them are:
+	- site
+	- inurl
+	- allinurl
+	- filetype
+	- intitle
+	- allintitle
+	- allintext
+
+- examples
+	inurl:co.uk inurl:adminn
+	filetype:sql hotmail gmail password
+	site:/com:8443
+	intitle:index.of
+
+- www.exploit-db.com/google-dorks (for information gathering)
+
+- ghdb (Global Hacking database)
+
+- Foundstone SiteDigger and SearchDiggity
+	- SiteDigger allows you run GHDB queries on websites
+	- It also has its own DB called FSDB
+	- FSDB - Foundstone Database
+	- SiteDigger is a native windows application and requires .NET 3.5
+	- Simply select the queries and specify the site/domain and scan
+
+	- SearchDiggity
+		- Is the primary attack tool 
+			- of the Google hacking diggity project
+
+		- GoogleDiggity is the traditional hacking tool
+		- BingDiggity is the bing equivalent of Google hacking tool
+			- BHDB 2.0 (now GHDB)
+		- CodeSearchDiggity is the 
+			- open source code vulnerability scanning tool
+		- DLPDiggity - Data loss prevention tool
+		- FlashDiggity - Adobe Flash security scanning tool
+		- MalwareDiggity - malware link detection tool
+		- PortscanDiggity - Passive Port scanning tool from google
+		- ShodanDiggity - easy interface to shodan search engine
+		- Bing BinaryMalwareSearch - Malware search in 
+			- Bing's indexing of executables
+		- NotinMyBackyardDiggity - to find info of your site easily
+
+- Shodan
+	- Search engine for internet connected device
+	- It collects information about all internet connected devices
+	- the fundamental difference between shodan and google is
+		- shodan crawls internet
+		- google crawls www
+	- devices powered in www only make up a tiny part
+	- thus Shodan gives a complete picture of the internet
+
+- pipl.com (find info about people)
+- checkusernames.com (nick names search)
+	- finds people info in 160 social network sites
+
+- web archives 
+
+	- Internet archives (a San Fransisco based digital library)
+		- state mission of "universal access to all knowledge"
+		- free public access to collections of digitised materials
+			- websites
+			- software applications and games
+			- music, movie, video, moving images
+			- 3 million public domain books
+
+- web.archive.org is the archive of websites
+	- if you have published sensitive information accidently
+		- and subsequently removed it (say after a week)
+	- web.archive may still have that as it would have the old version
+
+- Footprinting tools (FOCA)
+	- is the technique used to 
+		- gather information about computer systems
+			- and the entities they belong to
+
+		- capable of analysing documents
+		- Desktop app
+			- create a new project
+				- specify the domain
+				- folder and create button
+			- under the network node, you can do the following
+				- web search
+				- dns search
+				- dictionary search
+				- ip bing 
+					- to serve the domain name 
+					- running on the same ip address
+
+			- You can then scan for the site documents
+			- then collect the interested documents
+			- and extract meta data from those documents
+			- from the meta data you can get to know the
+				- employee name, email address etc
+
+- Harvester
+	- Gathers
+		- Emails, subdomains, hosts
+		- employee names, open ports, banners
+		- from different public sources like 
+			- search engines, pgp keys, shodan
+		
+	- use case
+		harvester -g <domain name> -l <result limit> -d <datasource>
+		- you can get to know
+			- emails and hosts found		
+	
+
+Recon-NG
+	- you can use the various modules 
+		- to check for vulnerabilities in the specified domain
+
+Maltego
+	- interactive data mining tool that renders 
+		- directed graphs for link analysis
+	- tool is used in online investigation for finding relationship
+		- between pieces of information 
+		- from various sources located on the internet
+	- focus of Maltego is to analyse the real life relationships
+		- between information that is publicly accessible in the net
+	- includes
+		- footprinting internet infrastructure
+		- gathering information about the organization
+		- can be used to determine the relationship 
+			- between following entities
+				- people, name email address, aliases
+				- groups of people, organisations
+				- websites, 
+				- internet infrastructures
+					- domains, dn names, 
+					- netblocks, ip addresses
+				- affiliations, documents & files
+		- connections are determined using 
+			- open source intelligence (osint)
+			- dns records, whois records, search engines
+			- social networks, various online apis
+			- extracted metadata
+
+Input - Output Manipulation
+===========================
+- Same Origin Policy
+
+- Input Validation
+	- Negative data validation (allow script sources not in black list)
+	- Positive data validation (allow script sources only in white list)
+ 
+- XSS
+	- Reflected and DOM based XSS
+		- Occurs when server uses the user input for output
+		- without validating the user input
+		- processed immediately on the basis of user input
+		- and results are reflected instantly to user.
+		- nothing is stored permanently (or in db)
+		- ex: search request and response
+		
+		- In this case, 
+			- the attacker has to convince the victim one by one
+			- he might do this by sending phishing emails
+			- and lure the victim to click on the malicious link
+
+		- DOM based XSS is subclass of Reflected XSS (work similar)
+	- Stored XSS
+		- In this case, the user input is stored in db
+		- without validating the user input
+		- Attack happens later when other user (victim) accesses that
+
+		- ex: Blog pages where malicious script can be the comments
+		- anyone subsequently visits the page 
+		- and accesses the comments left earlier, becomes the victim
+
+		- More harmful
+			- As the attacker does not have to convince anyone
+			- Everyone becomes the victim who accesses the blog
+		
+	
+
+Authentication
+==============
+
+- hydra tool to crack userid and password online
+- embedded in Kali
+- burp suite
+
+Captcha - Completely Automated Public Turing Test
+to tell Computers and Humans Apart
+
+Challenge-Response test used to determine whether or not the user is human
+
+Captcha problems:
+Weak Pictures/Algorithms
+Limited set of possible answers
+Encrypted by simple algorithm
+Replay Attacks
+
+- Dictionary is a common method to crack authentication
+	- It maintains a list of easily guessable passwords
+	- Many such dictionaries are available in the internet
+
+
+Authorization attacks
+=====================
+1 - Unauthorized process
+2 - Privilege Escalation
+3 - Path Traversal
+
+Unauthorized process - trying to perform actions not authorized for the current role / user.
+
+Privilege Escalation
+1) Horizontal (usera and userb have same privelege and usera accesses userb)
+2) Vertical (usera access the privilege of admin user)
+
+Path Traversal - trying to access parent folders of webroot or folders outside of webroot
+
+Session Management and XSRF
+===========================
+
+Session Management techniques
+
+Cookies (most popular method)
+	- Cookie contains the session token
+	- It gets generated when there is no session token in the cookie
+	- Subsequent request to servers sends this cookie (session token)
+	- Session token contains session id and other info
+URL Rewriting
+Hidden Form fields
+Special HTTP headers
+SSL Keys
+
+Cloud Architecture and Cloud Security
+=====================================
+Cloud Based Systems
+	- Requirements
+	- Technology
+	- Security
+	- Governance
+	- DevOps
+	- Training
+	- Apps
+	- Data
+
+- as is state
+	Current state assessment is key, no matter if a system exists or not
+	Consider the stakeholders
+	Consider the business
+
+	- see what needs to improve (where you want to be?)
+		- Features, Governance
+		- Functions, Data, Process, Performance, Security
+		- Technology Leveraged
+
+- to be state
+	- what we need to solve
+	- need to define the value
+		- Improve agility (say 92 / 100)
+		- Improve Productivity (say 83 / 100)
+		- Improve scalability (78 / 100)
+		- Increase Revenue (76 / 100)
+		- Decrease Cost (56 / 100)
+	- need to define the investment needed
+	- Future state assessment
+	- technology to leverage
+	- metrics
+	- test
+	- evaluate
+
+- Architecture needs to meet the requirements
+- Need to think holistically 
+- architect need to have eclectic array of skills
+	- need to understand the legacy technology
+	- need to understand the cloud technology
+	- Devops
+	- Methodology
+	- Governance
+- tools you would need in these areas
+	- Security
+	- Governance
+	- DevOps
+	- Performance
+	- Office Automation
+	- Design
+	- Collaboration
+
+Cloud Architecture
+	- Application Level
+	- Network Level
+	- Processing Level
+	- Data Level
+	- Storage Level
+
+	- Create Logical Architecture
+	- Create Physical Architecture
+	- Testing and Deployment
+	- Architecture is iterative
+
+	- Look at the requirements and then decide the technology
+Storage Level
+	- Physical Storage
+		- Object
+		- File
+		- Block
+	- Logical Storage
+
+
+Data Level
+	- moving up from the ability to store data 
+	- to the ability to managed data
+
+	- Transactional
+		- Relational
+		- Object
+	- Big Data / Analytics
+		- Data warehouse
+		- Machine Learning
+
+Processing Level
+	- CPU
+	- Host Platforms
+
+Network Level
+	- DNS
+	- IntraCloud
+	- InterCloud
+
+Application Level
+	- Application Services
+		- Custom
+		- Canned
+	- Containers
+		- Docker
+		- Kubernetes
+	- Languages
+		- ...
+	- User Interfaces
+		- Mobile
+		- Browser
+		- Devices
+
+
+Good Architecture
+- Define your requirements
+	- Business Process
+	- Data
+	- Security
+	- Governance
+	- Performance
+	- Cost
+- Define your desired end state (value add)
+	- Performance
+	- Security
+	- Cost / ROI
+- Map "as is" to "to be"
+	- Data
+	- Compute
+	- Storage
+	- Application
+- Create final architecture
+	(See below)
+
+Final Architecture
+- final take on what system should be, configuration and use of technology
+- final push to a good cloud architecture
+- Logical Architecture
+	- Patterns
+	- Performance characteristics
+	- Security system needs to do
+	- Manage a change and governance policies
+	- devops - tool chain should be (ci, cd)
+- Physical Architecture
+	- Actual technologies are selected here
+	- Brands of technology
+	- how they should be configured and tested
+(different teams for logical and physical architecture to avoid biases)
+
+Application Level Security
+- Infrastructure logs
+- API logs
+- Application logs
+- Data import and export logs
+- Security and access logs
+- Events, notifications and alerts
+- Changes and configuration management and deployment
+- Patching history and machine images
+- Activity logs
+- Session logs
+- Attacks and DDOS logs
+
+Data Level Security
+- Table/Object Level
+- Database Level
+- Record Level
+- Storage Level
+- Platform Level
+- In flight level
+
+User Interface Level Security
+- Users - create individual users
+- Groups - manage permissions with groups
+- Permissions - grant least privilege
+- Managed policies - Custom and AWS Policies
+- Password - configure a strong password policy
+- MFA - enable MFA for privileged users
+- Roles - use IAM roles for EC2 instances
+- Sharing - use IAM roles to share access
+- Rotate - rotate security credentials regularly
+- Conditions - restrict privileged access with further conditions
+- Root - reduce or remove use of root
+- Audit logging - enable CloudTrail and Config
+
+Metrics for success
+- Security systems availability, responsiveness
+- Cycle time improvement to business processes
+- Degree of compliance with deployed technical policies
+- Cycle time for resolving business policy non-conformance
+- Number of applications groups/developers trained on security tools
+- Percent of systems/applications utilising security services
+- Completeness of the system documentation
+- Improvement in ability to enforce security and privacy policy
+
+- Compliance domain configuration
+- Data security and data governance system
+
+Compliance
+- HIPAA
+- SOX
+- GDPR
+- PCI
+
+AWS cloud security services
+
+Areas to focus on
+- Customer data
+- Platform
+- Network
+- AWS Services
+- AWS Infrastructure
+
+
+Third Party Services
+- Trend Micro SecureCloud and Trend Micro Deep Security
+- CA Access Control and CA Identity Manager
+- Simplified Mobile Edition, Identity and Access Manager
+- CloudPassage cloud server exposure management
+- Okta Cloud Services Platform
+- Guardtime Keyless Signature Server
+
+- Governance (More of guidance role)
+- Identity (Ability to identify yourself to a security system)
+- Authentication (Authenticate who they claim to be)
+- Authorization
+- Audit
+- Encryption
+- Compliance
+
+Cloud providers and various verticals
+=====================================
+- Pick a cloud providers that's 
+	- HIPAA complaint (for Health care)
+	- COSOF complaint (in Finance vertical)
+	- PCI-DSS complaint (for Retail vertical)
+- and can help in FDA and ISO certification (for Manufacturing)
+
+Health care Industry
+- HIPAA - Health Insurance Portability and Accountability Act
+	- Allow better access to health insurance
+	- Reduce fraud and abuse
+	- Lower the overall cost of health care
+- Identifiable Health Information
+	- Your past, present or future physical or mental health or condition
+	- This data should be kept confidential 
+		- between you and healthcare providers
+- Covered entities (CEs) must complh with the security rule
+	- Health care plans: HMOs, group health plans, etc
+	- Health care clearing houses: billing and repricing companies
+	- Health care providers: doctors, dentists, hospitals etc
+
+- Storing, maintaining, managing and auditing of health care data
+	- should be HIPAA complaint
+
+	
+
+Finance Industry
+- Committe of sponsoring organizations framework (COSOF)
+	American Institute of CPA and Institute of Internal auditors
+	principles based (17 principles)
+
+	takes care of the following aspects:
+	- Organisational Governance
+	- Business Assets
+	- Internal Control
+	- Fraud
+	- Financial Reporting
+	formalize fundamental concepts to help
+	- specify objectives
+	- assess risks
+	- deploy controls
+	COSCO "Cube" - five integrated components
+	- control environment
+	- risk assessment
+	- control activities
+	- information and communication
+	- monitoring activities
+	COSCO "Cube" - 3 main objectives
+	- Operations
+	- Reporting
+	- Compliance
+- SERBANES-OXLEY ACT
+
+Retail
+- PCI-DSS (Payment Card Industry - Data Security Standard)
+  (12 core requirements, 280 audit procs, Control Objectives)
+- takes 90-100 days for remediation actions
+
+Manufacturing
+- FDA - Food and Drug Administration 
+	- Protects and promotes public safety
+	- Enforces federal law
+	- Oversees companies doing business in the US
+- ISO - International Organisation for Standardisation
+	- Regular standard reviews and revisions
+	- how you do things and how you process things
+	- determines the maturity of the process and ranking
