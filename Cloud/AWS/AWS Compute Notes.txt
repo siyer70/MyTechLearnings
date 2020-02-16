@@ -62,6 +62,21 @@ EC2
 
 Popular exam question - you will not charge for the hour in case of spot price if the instance is terminated AWS but will be charged for the hour if you yourself terminated the instance.
 
+Auto scaling Group
+- How it scales in
+	- Default Termination Policy
+		- Availability zone that has more instances running as compared to others
+			- Instance that is running with oldest 
+				- a. launch configuration
+				- b. launch template
+				(in that order)
+				
+					- If Multiple instances are running with same Launch configuration and template then
+						- Instances that are closest to the next billing hour
+			- note that 
+				- if you don't want an instance to terminate, you can enable scale-in protection for the instance
+				- those instances will then not be touched by ASG
+
 Elastic Block Storage	
 	- Virtual Hard Disk in Cloud
 	- Provides persistent block storage for use with EC2 instances
@@ -150,6 +165,7 @@ Elastic Block Storage
 
 Load Balancers
 	- Physical or Virtual device - to help you balance the load
+	- You need to have at least two public subnets for enabling load balancer
 	- Types
 		- Application Load Balancer
 			- best suited for balancing http or https traffic
@@ -415,7 +431,7 @@ Sample docker file content for creating a container with nginx WebServer
 }
 
 ECS (EC2 Container Service)
-	- EC2 is a highly scalable, fast, container management service 
+	- ECS is a highly scalable, fast, container management service 
 		- it makes it easy to run, stop and manage Docker containers on a cluster EC2 instances 
 	- Provides API calls to	
 		- Launch and stop container based applications

@@ -115,8 +115,316 @@ Inline policy - “allow-assume-s3-role-in-production”
   }
 }
 
-Key Management Service
-Cognito - Web Identity Federation Service
+CloudHSM
+- HSM stands for Hardware Security Module
+- They are special devices which safeguards and manages digital keys for strong authentication
+- These devices are "tamper resistant", that means if anyone tries to tamper they will automatically delete the keys stored
+- HSM are typically certified against internationally recognised standard such as "Common Criteria" and "FIPS 140"
+- Cloud HSM is Single Tenanted (Single Physical Device only for you)
+- It must be used within a VPC
+- Can be integrated with RedShift and RDS for Oracle
+- For fault tolerance, we will need to build cluster of 2 Cloud HSM
+- AWS uses "Safenet Luna SA HSM" appliance for Cloud HSM
+- They are FIPS validated
+- It generally has 2 partitions, one for AWS to monitor and second is cryptographic partition which you have access to and has stored keys
+- Use case
+	- typically used for compliance and for storing PII data keys
+	- if the data is in cloud, it is recommended to use the CloudHSM than using on premise HSM to avoid latencies
+- Disadvantages
+	- they are expensive and to be fault tolerant requires at least a cluster of 2 physical devices
+	- KMS is recommended to overcome the above
+
+
+
+KMS (Key Management Service)
+- AWS KMS is a managed Service which allows to create, manage and control the encryption keys and uses the HSMs to protect the security of the keys
+- KMS supports only Symmetric Key Algorithm and uses AES-GCM with 256 bit keys
+- Flow
+	- Create a CMK - Specify an Alias
+	- Define Administrative User and Key User
+	- Key user can reference to the KMS key id and encrypt / decrypt data 
+- Fully integrated with IAM for authorisation
+- Anytime you need to share sensitive information ... use KMS
+	- Database passwords
+	- Credentials to external service
+	- Private Key of SSL Certificates
+- Seamlessly integrated into
+	- Amazon EBS: encrypt volumes
+	- Amazon S3: Server side encryption of objects
+	- Amazon Redshift: Encryption of Data at rest
+	- Amazon RDS: Encryption of Data
+	- Amazon SSM: Parameter store
+	- pretty much every service is integrated with KMS in some way
+- CMK (Customer Master Key) is used to encrypt/decrypt data and AWS manages the CMK
+	- you do not have any control on CMK
+	- CMK also gets rotated by AWS
+	- 3 types of CMK
+		- AWS Managed Service Default CMK : Free
+		- User Keys created in KMS : $1 / month
+		- User Keys imported (must be 256-bit symmetric key) : $1 / month
+		- Plus pay for API call to KMS : $0.03 / 10000 calls
+- Encrypted secrets can be stored in the code / environment variables
+- To give access to KMS to someone
+	- Make sure the Key policy allows the user
+	- Make sure the IAM policy allows API calls
+- Able to fully manage the keys and policies
+	- Create
+	- Rotate Policies
+	- Disable
+	- Enable
+- Able to audit key usage (using CloudTrail)
+- See Encrypt and Decrypt Flow in the diagram (stored in the current directory)
+- In place Encryption vs Migration
+	- Following requires migration for encryption
+		- EBS Volumes
+		- RDS Databases
+		- Elastic Cache
+		- EFS network file system
+		(unencrypted EBS Volume to be encrypted, you need to take a snapshot, encrypt the snapshot and restore EBS volume from snapshot - this is called migration, similar process for others)
+	
+	- In place encryption possible for the following
+		- S3
+- KMS only allows TLS connection (as we cannot send data in plaintext over the network)
+- Caveats
+	- KMS can only help in encrypting upto 4KB of data per call (Important)
+		- if data > 4kb, you can use envelope encryption
+		- AWS suggests CMK + Data key based approach (described in envelope encryption)
+	- Since the data travels over the network, there is some latency involved
+- Envelope Encryption
+	- We generate 1 CMK
+	- We then generate the Data key. AWS returns PT (Plaintext) & CT (CipherText) version of it
+	- We use the plain text data key to encrypt the files in server
+	- We then store Cipher text data key along with encrypted file
+	- You can then delete the plain text data key and text file
+
+- Envelope Decryption
+	- Use the decrypt operation to decrypt the encrypted data key into a plaintext copy of the data key
+	- Use the plain text data key to decrypt the stored encrypted file
+
+- Architecture
+	- Please see the KMS architecture diagram in the folder
+
+- CMK and IAM Policy Evaluation logic
+	- Both of the following should be yes
+		- IAM Policy allows: Yes / No
+		- CMK Policy allows: Yes / No
+
+	If in CMK policy, root principal is used with allow kms:* and resource: * - it is considered as CMK level yes for all the users
+	If in CMK policy, root principal is NOT used - it is considered as CMK level no unless explicit action given to specific user in CMK
+
+	Also note that, if an explict deny specified at IAM policy but allowed at CMK policy level, the user will NOT be able to perform the operation
+	
+	In the under-mentioned case, user Alice will be able to perform both Encrypt and Decrypt as it is allowed in both IAM and at CMK level
+
+	- IAM inline policy sample
+    	{
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "VisualEditor0",
+                    "Effect": "Allow",
+                    "Action": "kms:Encrypt",
+                    "Resource": "arn:aws:kms:ap-northeast-1:871285060102:key/68e86af6-0db6-4fd1-8c17-fb8a20c766cd"
+                }
+            ]
+        }
+
+        CMK Key Policy sample
+        {
+            "Version": "2012-10-17",
+            "Id": "key-consolepolicy-3",
+            "Statement": [
+                {
+                    "Sid": "Enable IAM User Permissions",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": "arn:aws:iam::037742531108:root"
+                    },
+                    "Action": "kms:*",
+                    "Resource": "*"
+                },
+                {
+                    "Sid": "Allow access for Key Administrators",
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": "arn:aws:iam::037742531108:user/Alice"
+                    },
+                    "Action": [
+                        "kms:DescribeKey",
+                        "kms:Decrypt*"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        }
+
+- KMS ViaService
+	- You can specifically allow / deny specific services performing KMS operations under certain principal using KMS ViaService conditions
+	- Example CMK policy below:
+
+	- This will restrict user (principal) Alice from using any KMS operations that falls under EC2
+	- for example creation of encrypted EBS volume 
+		- try creating a encrypted EBS volume by selecting a KMS master key where the under-mentioned key policy is defined
+
+	{
+		"Id": "key-consolepolicy-3",
+		"Version": "2012-10-17",
+		"Statement": [{
+				"Sid": "Enable IAM User Permissions",
+				"Effect": "Allow",
+				"Principal": {
+					"AWS": "arn:aws:iam::888913816489:root"
+				},
+				"Action": "kms:*",
+				"Resource": "*"
+			},
+			{
+				"Sid": "Allow use of the key",
+				"Effect": "Deny",
+				"Principal": {
+					"AWS": "arn:aws:iam::888913816489:user/Alice"
+				},
+				"Action": [
+					"kms:Encrypt"
+				],
+				"Resource": "*",
+	      "Condition": {
+	        "ForAnyValue:StringEquals": {
+	          "kms:ViaService": [
+	            "ec2.us-east-1.amazonaws.com"
+	         ]
+	      }
+	       }
+			}
+		]
+	} 
+
+	(you can also put "rds.us-east-1.amazonaws.com" or other service involving kms operation in that array to restrict further)
+
+- KMS Grant
+	- is similar to secret token that Granter grants to Grantee - token contains the permissions / operations that Grantee can perform on CMK
+	- see CLI section for some of the commands
+
+
+- CLI
+	aws kms list-keys
+	aws kms encrypt --key-id <key id> --plaintext "Some text" --query CiphertextBlob --output text | base64 -d > encrypteddemo.txt
+	aws kms decrypt --ciphertext-blob file://encrypteddemo.txt --query Plaintext --output text | base64 -d
+
+	'generate data keys (for envelope encryption) - returns plaintext and ciphertextblob
+	aws kms generate-data-key --key-id <key id> --key-spec AES_256
+
+	{
+		"Plaintext" : "",
+		"KeyId" : "<arn of the keyid>"
+		"CiphertextBlob" : ""
+	}
+
+	(Granter performs this operation)
+	aws kms create-grant --key-id <arn of the key id> --grantee-principal <grantee-user-arn> --operations "Encrypt" [--region <region-id> ]
+	(you will get the GrantToken and GrantId as a json)
+
+	aws kms revoke-grant --key-id <key id> --grant-id (grant-id) [--region <region-id>]
+
+	(Grantee performs this operation and uses the grant-token)
+	aws kms encrypt /
+	--key-id <key id> /
+	--plaintext "Some text" /
+	--query CiphertextBlob /
+	--output text /
+	--grant-tokens <grant token received>
+	| base64 -d > encrypteddemo.txt
+
+
+
+
+
+SSM (Systems Manager) Parameter Store
+- Secure storge for configuration and secrets
+- Optional seamless encryption using KMS
+- Serverless, scalable, durable, easy SDK, free
+- Version tracking of configuration / secrets
+- Configuration management using Path and IAM
+- Notifications with Cloudwatch Events
+- Integration with CloudFormation
+- Sits on top of KMS
+	- You can ask to retrieve plain text / encrypted configuration from SSM Parameter store
+		- For Plain text configuration, checks for IAM permission and returns the configuration from store
+		- For Encrypted configuration, 
+			- First checks for IAM permission and then retrieves the encrypted configuration from store
+			- Next it checks for KMS policies for decryption and then decrypts the encrypted configuration using KMS
+	- Same applies for storing plain text / encrypted configuration
+
+- Tree structured
+	for ex:
+		/ my-department/
+			my-app/
+				dev/
+					db-url
+					db-password
+				prod/
+					db-url
+					db-password
+			other-app/
+		/ other-department/
+	- you can then use GetParameter or GetParameterByPath API to get the respective department->app->env->db-url parameter from store
+
+- Flow
+	- Create a new parameter
+	- Specify the parameter type and values
+	- Reference parameters in your commands or code
+
+	for eg: 
+		parameter: /my-app/dev/db-url
+		type: String / String List (comma separated) / SecureString
+		value: dev.database.mydb.com:3306
+		
+		for secure string - specify additional info
+		account: my account / another account
+		kms key id: for eg: alias/tutorial or alias/aws/codecommit or alias/aws/rds or alias/aws/s3 or alias/aws/lambda
+		value: (will not appear as you type)
+
+		for retrieving from cli
+		aws ssm get-parameters --names /my-app/dev/db-url /my-app/dev/db-password --with-decryption
+
+		aws ssm get-parameters-by-path --path /my-app --recursive
+
+	for the IAM role, you can simply add the following inline policies
+		service: Systems Manager
+		Actions: GetParameter and GetParameterByPath
+		Resources: Specific or All Resources - select Specific
+			Region: * (check Any checkbox)
+			Account: * (check Any checkbox)
+			Fully qualified parameter name: my-app/*
+
+			this build the arn something like this: arn:aws:ssm:*:*:parameter/my-app/*
+
+		service: KMS
+		Actions: Under Access Level -> Write, select Decrypt
+		Resources: Specific
+			Region: *
+			Account: *
+			Key id: (get the key id from KMS screen - in this case, the key id for alias/tutorial)
+			this build the arn something like this: arn:aws:kms:*:*:key/<keyid>/
+
+	for Lambda function using python, following code should work
+		import json
+		import boto3
+		import os
+
+		ssm = boto3.client('ssm', region_name="ap-south-1")
+		dev_or_prod = os.environ["DEV_OR_PROD"]
+
+		def lambda_handler(event, context):
+			dburl = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/db-url"])
+			dbpassword = ssm.get_parameters(Names=["/my-app/" + dev_or_prod + "/db-password"], WithDecryption=True)
+			print(dburl)
+			print(dbpassword)
+			return "worked!"
+
+Cognito 
+	- provides authentication, authorization and user management service for your web and mobile apps
+	- Web Identity Federation Service
 	- Web identity federation is when you tried to sign in to a web site using an identity provider credentials (for eg google)
 	- in other words Federation allows users to authenticate with a web identity provider
 		- Federation means
@@ -160,9 +468,25 @@ Cognito - Web Identity Federation Service
 		- Successful authentication generates JSON Web Token (JWTs)
 		- covers User registration, authentication and account recovery etc
 
+		- User pools
+			- Specify the name
+			- Specify the attributes
+				username with verified email address
+				or username as email address or phone number
+				other attributes that user can use during sign-up & sign-in process (family name, birthdate)
+			- password strength
+			- mfa (email and phone number) - aws will send sms on behalf your app
+			- message customization
+			- devices (remember user devices or not)
+
 	- Cognito Identity Pools
+		- Identity pool provides the functionality of federation of users in user pools
 		- Identity pools enable provide temporary AWS credentials to access AWS services like S3 or DynamoDB
 		- It is the one which actually authorises your access to your AWS resources
+		- In other words, Cognito Identity pool take the identities from whichever source (custom, cognito user pool, social identity platforms and
+			- provide secure access to the AWS services regardless of where the user comes from
+		- (see diagram CognitoUserPoolvsIdentityPool)
+
 
 	- Example scenario - user needs to access a website that allows Facebook credentials and uses cognate service
 		- Flow would work like this
@@ -177,7 +501,19 @@ Cognito - Web Identity Federation Service
 			- user is then able to access the AWS resources that the IAM role supports
 
 Security Token Service
-	- Allows to create temporary credentials
+	- Allows to create temporary credentials (token is valid for upto one hour - must be refreshed)
+	- Cross Account Access (Allows users from one AWS account to access resources in another)
+		- Flow
+			- Define a IAM Role for another account to access
+			- Define which accounts can access this IAM role
+			- Use AWS STS to retrieve credentials and impersonate the IAM Role you have access to (AssumeRole API)
+	- Federation (Active Directory)
+		- Provides non-AWS user with temporary AWS access by linking users Active Directory credentials
+		- Uses SAML (Security Assertion Markup Language)
+		- Allows Single Sign-on (SSO) which enables users to log in to AWS console without assigning IAM credentials
+	- Federation with third-party providers / Cognito
+		- used mainly in web and mobile applications
+		- Makes use of Facebook/Google/Azure to federate them
 
 	use case
 	- When developer working on his local environment and needs access to S3 in aws, 
@@ -275,12 +611,20 @@ AWS Secret Manager
 	- Other type of secrets (for eg: API Key)
 
 Certificate Manager
-Directory Service
+
 
 Web Application Firewall (WAF)
 - AWS WAF is a web application firewall service that helps protect your web apps from common exploits that could affect app availability, compromise security, or consume excessive resources.
 - AWS WAF is a web application firewall that lets you monitor the HTTP and HTTPS requests that are forwarded to an Amazon API Gateway API, Amazon CloudFront or an Application Load Balancer.
 - AWS WAF also lets you control access to your content. Based on conditions that you specify, such as the IP addresses that requests originate from or the values of query strings, API Gateway, CloudFront or an Application Load Balancer responds to requests either with the requested content or with an HTTP 403 status code (Forbidden).
+
+Six Conditions that it supports 
+- SQL Injection attacks
+- Cross-site scripting attacks
+- Geographical locations that request originate from (Geo Match)
+- Length of specified parts of the request  (Size constraints)
+- IP addresses or address ranges that requests originate from
+- Strings that appear within the requests
 
 At the simplest level, AWS WAF lets you choose one of the following behaviors:
 - Allow all requests except the ones that you specify
@@ -304,7 +648,49 @@ AWS Shield
 		- Automated application (Layer 7) traffic monitoring
 		- Expensive ($3000 per Organisation and additional cost)
 
+- Mitigating DDoS attacks
+	- Be ready to Scale
+	- Minimise the attack surface area 
+		- one server should run one service - for ex: application and database should not run on the same server
+		- decouple your infrastructure - make use of services like SQS, ElasticBeanStalk
+	- Know what is normal and what is abnormal
+		- Key metrics need to be defined to understand the behaviour
+			- Website reaching huge traffic in the middle of night
+			- make use of services like Cloudwatch, SNS
+	- Create a plan for attacks
+		- Check whether the source IP address are same
+		- Check from which country the increased traffic is coming from
+		- Nature of attack (SYN flood, Application level)
+		- Can it be blocked using NACL and Security Groups
+		- It is recommended to have AWS support - at least the business support
 
+	- Recommended Services that can be used to get protection from DDoS - Prevention Measures
+		- Amazon CloudFront
+		- Amazon Route53
+		- Autoscaling Group
+		- Elastic Load Balancing
+		- AWS WAF
+		- VPC, Security Groups, NACL
+
+	- See this video for protection from attacks: https://www.youtube.com/watch?v=w9fSW6qMktA
+
+	- Five DDoS Attack Vectors
+		- UDP reflection attacks
+		- UDP floods
+		- TCP SYN floods
+		- Web application layer attacks
+		- DNS query floods
+	- Four AWS use cases
+		- Common web application
+		- Highly resilient web application
+		- Video game development
+		- Voice communication
+
+	DDoS attacks can
+		- Target networks with large volumes of traffic
+		- Target systems with large volumes of connections
+		- Target services with large volumes of requests
+		
 
 Inspector
 - CVE (Common Vulnerabilities & Exposure)
@@ -381,4 +767,103 @@ aws s3 presign <bucketname>/<objectname>
 SAML (Security Assertion Markup Langugage)
 - It is an secure XML based communication mechanism for communicating identities across organisations
 - It eliminates the need to maintain multiple authentication credentials such as passwords in multiple locations
+
+
+- Flow works like this
+	- user opens the idp (identity provider's) url and enters Username and password
+	- IdP will validate the credential and associated permisson and then user receives SAML assertion from the IdP as part of the response
+	- User does a POST of that SAML assertion to the SAAS sign in page and SP will validate those assertion
+	- On validation, SP will construct relevant temporary credentials and construct URL for the console and sends to the user
+
+https://signin.aws.amazon.com/static/saml-metadata.xml
+https://sso.jumpcloud.com/saml2/aws
+
+arn:aws:iam::434265470577:role/SSOFromJumpCloud
+
+arn:aws:iam::434265470577:role/SSOFromJumpCloud,arn:aws:iam::434265470577:saml-provider/JumpCloud
+
+AWS Directory Service
+- It is a managed service based on cloud that allows us to create directories
+	- takes care of high availability, monitoring, backup, recovery, patching etc.
+	- The server running the Active Directory service is called the Domain Controller
+		- it can authenticate and authorize the users and computers associated to it
+- There are three components
+	- Active Directory Service with Microsoft Active Directory (Windows Server with AD installed) - AWS Managed
+	- Simple AD (Samba 4 compatible server) - Samba as Microsoft Active Directory Domain Controller
+		- Microsoft AD compatible directory from AWS Directory Service that is powered by Samba 4
+		- Supports AD features such as user accounts, group memberships, joining a Linux Domain, Kerberos based SSO and group policies
+		- AWS provides monitoring, daily snapshots and recovery as part of the service
+		- Does NOT support trust relationships, MFA, DNS dynamic update, schema extensions, communication over LDAPS, Powershell AD
+	- AD Connector - It is a proxy service that provides a easy way to connect applications in cloud to your existing on premise Microsoft AD
+		- When user logs in to the applications, AD Connector forwards the sign-in requests to your on-premise AD Domain Controllers for authentication
+		- You need to setup VPN Tunnel for the same
+
+
+- to let ec2 instances join the domain
+	- create simple ad directory service (name it simplead.xyz.com) - note down the simplead administrator password
+	- once created, note down the dns addresses (you will see 2 ip addresses)
+	- create a ec2 instance
+	- ssh into it
+	- install sssd, realmd, krb5-workstation (yum -y install sssd, realmd, krb5-workstation)
+	- in the /etc/resolv.conf (setup the nameservers using the earlier noted ip addresses) - add the following lines and save
+		nameserver <first ip address>
+		nameserver <second ip address>
+	- now if you do - nslookup simplead.xyz.com - you should be able to resolve it with the above mentioned addresses
+	- realm join -U administrator@simplead.xyz.com simplead.xyz.com --verbose (provide the simplead administrator password)
+		- you should see the message "successfully enrolled machine in realm"
+	- vi /etc/ssh/sshd_config
+		- change the line "Enable PasswordAuthentication yes"
+	- nano /etc/sudoers
+		- add the following line
+		- %Domain\ Admins@example.com ALL=(ALL:ALL) ALL
+
+	- service sssd restart
+	- service sshd restart
+	
+Trust Relationships
+- In AWS, we can create "Trust Relationships" for IAM Role so that we can have cross-account IAM Access.
+
+AWS Cross account trust example policy
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::434265470577:root"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {}
+    }
+  ]
+}
+
+two accounts are involved: Source Account where the role is assumed, other account where cross account role is created
+
+AD Trusts
+- In AD, domain to domain communication can occur through Trusts
+
+- An AD DS trust is a secured, authentication communication channel between entities, such as AD DS domains
+
+- Trusts enable you to grant access to resources to users, groups and computers across entities
+
+- Sample trust between
+domain1.xyz.com	-> domain2.xyz.com
+
+Direction of Trust
+	- Trust can either be one way or two ways
+	- In two way trust, domain from either side can access the other side
+
+- You can use AD for accessing AWS management console and aws apps & services (RDS)
+- You can access Amazon EC2 instances using AD
+- Further You can use AD aware workloads (SQL Server, Sharepoint, .NET Applications, RDP Licensing Manager)
+- You can setup AWS Microsoft AD Directory to enable the above
+- Alternatively, you can establish trust between AWS Microsoft AD Directory and On Premise Microsoft AD
+	- Thus on premise users can access any of the above mentioned services
+- Further you can setup 
+	- AD FS  for federating users with other SaaS or external service providers (say Office 365)
+	- ADSync for synchronising users to Azure AD
+
+
+
 

@@ -333,13 +333,70 @@ CodePipeline
 Cloud9
 X-Ray (Application Monitoring tools - often compared with New Relic / Azure Application Insight)
 	AWS X-Ray allows us to debug our applications with functionality of request tracing so we can find the root cause and performance issues
+	- Advantages
+		- Troubleshooting Performance (bottlenecks)
+		- Understand dependencies in Microservice Architecture
+		- Pinpoint Service issues
+		- Review request behaviour
+		- Find errors and exceptions
+		- Are we meeting time SLA
+		- Where I am throttled?
+		- Identify users who are impacted
 	- Here is how it works
-		- Application code bundled with X-Ray SDK
-		- During runtime X-Ray SDK sends application metrics specific data to X-Ray Daemon
-		- X-Ray Daemon in-turn sends the aggregated/processed data to X-Ray API 
-		- via X-Ray API & X-Ray Console (which runs on the web browser), you can visualise 
+		- Your code must import AWS X-Ray SDK (in other words Application code bundled with X-Ray SDK)
+		- The bundled application at runtime captures the following:
+			- Calls to AWS services
+			- HTTP / HTTPS requests
+			- Database calls (MYSQL, PostgresSQL, DynamoDB)
+			- Queue calls (SQS)
+		- Install the X-Ray Daemon or enable X-Ray AWS Integration
+			- X-Ray Daemon works as a low level UDP packet interceptor (Linux / Windows / MAC)
+		- X-Ray SDK then sends application metrics specific data to X-Ray Daemon
+			- Each application must have the IAM rights to write data to X-Ray
+		- X-Ray Daemon in-turn sends the aggregated/processed data batch to X-Ray service
+			- X-Ray Service collects data from all the different services
+			- Service map is computed from all the segments and traces
+		- via X-Ray Console (which runs on the web browser), you can visualise 
 			- the application connectivity
 			- trace root cause of the performance issues
+
+	- X-Ray Troubleshooting
+		- EC2
+			- Ensure the EC2 IAM role has proper permissions
+			- Ensure that the EC2 instance is running X-Ray Daemon
+
+		- On Premise Instance
+			- Linux system must run the X-Ray Daemon
+			- Ensure correct AWS credentials on on-premise instance
+
+		- Lambda
+			- Ensure it has an IAM execution role with proper policy (AWSXRayWriteOnlyAccess)
+			- Make sure X-Ray integration is ticked on Lambda (Lambda runs the daemon)
+			- Ensure X-Ray is imported in the code
+
+		- Beanstalk
+			- Set Configuration on EB Console
+			- Or use a beanstalk extension (.ebextensions/xray-daemon.config)
+
+		- ECS / EKS / Fargate (Docker)
+			- Create a Docker image that runs the Daemon / or use the official X-Ray Docker image
+			- Ensure port mappings & network settings are correct and IAM task roles are defined
+
+		- X-Ray Daemon
+			- The X-Ray Daemon / Agent has a config to send traces to cross account
+			- make sure the IAM permissions are correct, Agent will assume the role
+			- This allows for a central account for all your application tracing
+
+		- Instrumentation
+			- Code must be instrumented to use the AWS X-Ray SDK (interceptors, handlers, http clients)
+			- IAM role must be correct to send traces to X-Ray
+
+	- X-Ray key terms
+		- Segments: each application / service will send them
+		- Trace: segments collected together to form an end-to-end trace
+		- Sampling: decrease the amount of requests send to X-Ray (and reduce the cost)
+		- Annotations: Key Value pairs used to index traces and use with filers (important)
+		- Metadata: Key Value pairs NOT indexed, not used for searching
 
 	- X Ray Console
 		- you can select the time window from the web page
@@ -356,6 +413,6 @@ X-Ray (Application Monitoring tools - often compared with New Relic / Azure Appl
 			- average response time for each url (aggregated over a period)
 
 		- Integrates well with following AWS services
-			- EC2, Lambda, ELB, API Gateway, Elastic Beanstalk
+			- EC2, Lambda, ELB, API Gateway, ECS, Elastic Beanstalk
 		- Provides support for following platforms
 			- Java, Go, .NET, Ruby, Python, NodeJS

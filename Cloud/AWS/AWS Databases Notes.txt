@@ -73,6 +73,19 @@ RDS (OLTP - Online Transaction Processing)
 		- Once the RDS is encrypted
 			- Data stored at rest in the underlying storage is encrypted
 			- Same applies to automated backups, read replicas and snapshots
+
+	- Database Instances and Number of database limitations
+		- 40 DB instances can be launched - (10 Oracle or MS SQL Server) or all 40 can be Arora or postgres or mysql or maria or even Oracle if BYOL
+		- Oracle only one database per instance where as MS SQL Server allows upto 100 databases
+		- No limitations on Arora, Postgres, MYSQL, Maria
+
+	- Billing is based on
+		- DB Instance hours
+		- Storage (per GB per month)
+		- Provisioned IOPS per month
+		- I/O requests per month
+		- Backup storage
+		- Data transfer (In and Out)
 		
 
 Datawarehouse (OLAP - Online Analytical Processing)
@@ -84,6 +97,7 @@ Datawarehouse (OLAP - Online Analytical Processing)
 
 DynamoDB (NoSQL)
 	- fast and flexible NoSQL database service 
+	- serverless
 	- for all applications that need consistent, single-digit millisecond latency at any scale
 	- fully managed database
 	- supports both key-value and document models
@@ -92,6 +106,270 @@ DynamoDB (NoSQL)
 	- stored on SSD storage
 	- spread across 3 geographically distinct data centres
 	- eventual consistent reads (default) and strongly consistent reads
+
+	- Throughput basics
+		- Determined on the following basis
+			- WCU - Write Capacity Units
+				- One write per second for an item upto 1kb in size
+				- if the items are larger than 1kb, then more WCUs are consumed
+
+				Example 1: we write 10 objects per second of 2kb each = 10 * 2 = 20 WCUs
+				Example 2: we write 6 objects per second of 4.5kb each = 6 * 5 = 30 WCUs (4.5kb rounded off to 5)
+				Example 3: we write 120 objects per minute of 2 kb each = (120/60) * 2 = 4 WCUs
+			- RCU - Read Capacity Units
+				- One read per second for strongly consistent reads for an item upto 4 kb in size
+				- Two read per second for eventually consistent reads for an item upto 4 kb in size
+				- if the items are larger than 4kb, then more RCUs are consumed
+
+				Example 1: 10 strongly consistent reads per second of 4kb each = 10 * (4kb / 4kb) = 10 RCUs
+				Example 2: 16 eventually consistent reads per second of 12kb each = (16 / 2) * (12kb/4kb) = 24 RCUs
+				Example 3: 10 strong consistently reads per second of 6kb each = 10 * (8/4) = 20 RCUs (6kb rounded off to 8kb - should be multiple of 4kb)
+
+			- Determining the number of partitions:
+				- Determine capacity: capacity = (Total RCU / 3000) + (Total WCU / 1000)
+				- Determine size: size = size of db / 10 GB
+				- Number of partitions: partitions = CEILING(MAX(capacity, size))
+
+				- WCUs and RCUs are evenly spread between partitions (Important)
+					- For example: if you have 10 partitions and if you have 100 RCUs and 100 WCUs, then each partition gets 10 each
+		- Option to enable Auto-scaling of throughput to meet demand
+		- "Burst Credit" from AWS if you exceed little bit more than the provisioned throughput
+		- ProvisionedThroughputExceededException if it exceeds provisioned throughput
+			- Reasons
+				- Hot keys: One partition key is read too many times (for ex: popular item or product)
+				- Hot partitions
+				- Very large items: Remember WCU and RCU both dependent on the size of items
+
+			- Solutions:
+				- Exponential Back off (already in SDK)
+				- Distributed partition keys as much as possible
+				- If RCU is the issue, then use DAX (DynamoDB Accelerator)
+
+		- It has a feature of "Conditional Update / Delete" that makes DynamoDB an optimistic / concurrency database
+			- That means that you can ensure an item hasn't changed before altering it
+
+		- DAX or DynamoDB Accelerator
+			- Seamless cache for DynamoDB
+			- Writes go through DAX to DynamoDB
+			- Micro second latency for cached reads & queries
+			- Solves the Hot key problem (too many reads for a partition key ex: popular product)
+			- 5 minutes TTL for cache (items) by default
+
+			- To use DAX, create a DAX cluster (cache cluster), specify the node type, size etc..
+			- supports up to 10 nodes for the DAX (cache) cluster
+			- Multi AZ (3 nodes minimum recommended for production)
+			- Secure (Encryption at rest with KMS, VPC, IAM, Cloud Trail)
+
+		- Programming Interfaces
+			- High Level Interface
+			- Document Interface
+			- Low Level Interface
+
+			- Low Level API
+
+		- upto 400 kb of data per item (combined size of attribute Name and value) - Important
+
+			
+
+		- SDK
+			- PutItem
+				- create or full replace) 
+				- consumes WCU
+			- UpdateItem 
+				- partial update of attributes 
+				- possibility to use atomic counters and increase them
+			- Conditional Writes 
+				- write/update only if a condition matches or reject the write request 
+				- helps with concurrent access to items
+				- no performance impact
+
+			- DeleteItem
+				- Delete an individual row
+				- Ability to perform a conditional delete
+
+			- DeleteTable
+				- Deletes the entire table and all its items
+				- Much quicker deletion than calling DeleteItem on all items
+
+			- BatchWriteItem
+				- upto 25 PutItem or DeleteItem in a single call
+				- upto 16 MB of data written
+				- for partial failures, you have to build the retry mechanism for failed items
+					- using exponential back off algorithm
+				
+				- saves you in latency by reducing the number of API calls done against DynamoDB
+				- operations are done in parallel for better efficiency
+
+			- GetItem
+				- Read based on partition key
+				- hash key or hash-range i.e. partition key or partition key + sort key
+				- ProjectionExpression can be specified to include only certain attributes (saves network bandwidth)
+				- eventually consistent by default
+				- option to use strongly consistent reads (more RCU and might take longer)
+
+			- BatchGetItem
+				- upto 100 items
+				- upto 16 MB of data
+				- items are retrieved in parallel to minimise latency
+
+			- Query
+				- returns items based on
+					- partition key (must be an = operator)
+					- sort key (= < <= > >= between begin) - optional
+					- filter expression to further filer (client side filtering)
+				- returns 
+					- upto 1 mb of data
+					- or number of items specified in limit
+				- able to do paginations in result
+				- can query table, a local secondary index or a global secondary index
+
+			- Scan
+				- Scans the entire table and then filter out data (inefficient)
+				- Returns upto 1 MB of data - use pagination
+				- consumes lot of RCU
+				- use with limit option if possible or reduce the size of result and pause
+				- use parallel scan for better performance - but RCU consumption will still be very high
+				- consider using ProjectionExpression + FilterExpression (no change in RCU)
+
+			- CLI
+				--projection-expression - attributes to retrieve
+					- example:
+						aws dynamodb scan --table-name <table name> --projection-expression <expression> --region <region name>
+						aws dynamodb scan --table-name userposts --projection-expression "user_id, content" --region "us-east-1"
+
+				--filter-expression - filter results
+					- example:
+						aws dynamodb scan --table-name userposts --filter-expresion "user_id = :u" 
+							--expression-attribute-values '{":u" : {"S" : "123456"}}' --region "us-east-1"
+
+				- Optimization
+					--page-size: full dataset is still retrieved but each API call will request less data (helps avoid time outs)
+
+					aws dynamodb scan --table-name userposts --region "us-east-1" --page-size 1
+					
+					- if there are 3 rows in DB, it will invoke 3 API calls (since the page size is 1) to get all data but that is transparent to us
+					- you would still see 3 records in output
+					
+
+				- Pagination
+					--max-items: maximum number of results returned by the CLI, Returns NextToken
+					--starting-token: specify the last received NextToken to keep on reading
+
+					aws dynamodb scan --table-name userposts --region "us-east-1" --max-items 1
+
+					- here you will see only one record, but with "NextToken" as one of the attribute in the result, next time you can use that
+					- if you don't see any "NextToken" in the result, that means that there are no more pages to show
+
+					aws dynamodb scan --table-name userposts --region "us-east-1" --max-items 1 --starting-token "..."
+
+	- LSI (Local secondary index)
+		- An index that has the same partition key as the base table, but a different sort key. 
+		- Alternate range key for your table, local to the hash key
+		- Up to five local secondary indexes per table
+		- The sort key consists of exactly one scalar attribute (String, Number, Binary)
+		- LSI must be defined at table creation time
+		- Uses the WCU and RCU of the main table (no special throttling considerations)
+
+		example player_games table
+			player_id (partition key)
+			game_id (sort key)
+			game_played_on (this can be a candidate LSI)
+			
+
+	- GSI
+		- An index with a partition key and a sort key that can be different from those on the base table.
+		- To speed up queries on non-key attributes, use a Global Secondary Index
+		- GSI = partition key + optional sort key
+		- The index is a new "table" and we can project attributes on it
+			- partition key and sort key of the original table are always projected (key only)
+			- can specify extra attributes to project (INCLUDE)
+			- can use all attributes from main table (ALL)
+		- Must define RCU / WCU for the index (since it is like a table only)
+			- If the writes are throttled on the GSI, the main table will be throttled (Important)
+			- Assign your WCU capacity carefully and choose your GSI partition key carefully
+		- Possibility to add / modify GSI as you go (not like LSI) - One of the key difference between LSI and GSI
+
+
+
+		example player_games table
+			player_id (partition key of the original table) 
+				- one of the attribute to be projected in GSI
+			game_id (sort key of the original table) - 
+				- this can be a partition / sort key
+				- or can be one of the attribute to be projected in GSI
+			game_played_on (this can be a candidate LSI) 
+				- this can be a partition / sort key
+				- or one of the attribute to be projected in GSI
+
+	- DynamoDB Streams
+		- Changes in DynamoDB (Create, Update, Delete) can end up in a DynamoDB stream
+		- Flow
+			- Change Log (create / update / delete in table) -> Stream -> Lambda
+		- This stream can be read by AWS Lambda and we can then define actions such as:
+			- React to changes in real time (for eg: welcome email to users)
+			- Analytics
+			- Create derivative tables / views
+			- Insert into ElasticSearch 
+			- and so on & so forth
+		- Could implement cross region replication using Streams
+		- Streams has 24 hours of data retention
+
+	- DynamoDB Transactions
+		- Ability to create / update / delete multiple rows in multiple table at the same time
+		- All or nothing type of operation
+		- Write Modes now: Standard, Transactional (transactional now added)
+		- Same way Read Modes now: Eventual Consistency, Strong Consistency, Transactional
+		- Consume 2X of WCU / RCU
+	
+		- Example
+			- AccountBalance Table and Transactions Table
+
+			- AccounntBalance (Account Id, Balance, Last Transaction timestamp)
+			- Transactions table (tx id, tx date, account_from, account_to, amt, dc, tag)
+		
+			- When a transaction occurs, transaction record needs to be inserted in Transactions table and AccountBalance also needs to be updated
+		
+		
+	- DynamoDB TTL (Time to Live for Items/Rows in DynamoDB)
+		- You define a TTL column (name it as you want) and add a date as a number there (use epochconverter - time since 1970 - to get java long type value for date)
+		- got overview tab in the table and click manage TTL - specify the ttl column name there (you can also run preview from there to see records for specific time)
+		- TTL is provided at no extra cost, deletions do not use WCU / RCU
+		- TTL is a background task operated by DynamoDB service itself
+		- It is enabled per Row
+		- It typically deletes expired items within 48 hours of expiration
+		- Deleted items due to TTL are also deleted in GSI / LSI
+		- DynamoDB Streams can help recover expired items
+		Use case
+		- Helps reduce storage and manage table size over time
+		- Helps adhere to regulatory norms
+
+	- DynamoDB Security
+		- VPC Endpoints available for accessing DynamoDB without internet
+		- Access fully controlled by IAM
+		- Encryption at Rest using KMS
+		- Encryption in transit using SSL / TLS
+	
+	- DynamoDB Backup & Restore
+		- Point in time restore like RDS
+		- No performance impact (it uses streams internally)
+
+	- DynamoDB Global Table
+		- Multi Region, fully replicated, high performance
+	
+	- Data Migration to DynamoDB
+		- You can use Amazon DMS can be used to migrate to DynamoDB (from MongoDB, Oracle, MYSQL, S3 etc)
+
+	- DynamoDB local testing
+		- you can launch a local DynamoDB on your computer for development purposes
+
+
+aws dynamodb put-item \
+    --table-name Music \
+    --item '{ "Artist": {"S": "Acme Band"}, "SongTitle": {"S": "Happy Day"}, "AlbumTitle": {"S": "Songs About Life"} }' \
+    --return-consumed-capacity TOTAL --endpoint-url http://localhost:8000
+
+aws dynamodb query --table-name Music --key-conditions file:///Users/chasrini/aws/key-conditions.json --endpoint-url http://localhost:8000
+		
 RedShift (Datawarehouse / OLAP)
 	- Amazon Datawarehouse solution is called RedShift
 	- It is used for business intelligence

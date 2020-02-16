@@ -28,6 +28,7 @@ S3 (Simple Storage Service)
 		- Amazon guarantees 11 x 9s durability
 	- S3 features
 		- Tiered storage available (all with 11 x 9s durability and with milliseconds latency except S3 Glacierxxx)
+			- refer to this page for quick understanding of tiers: https://aws.amazon.com/s3/storage-classes/
 			- S3 Standard
 				- 99.99% availability (99.9% SLA)
 				- stored reduntantly across multiple devices in multiple facilities

@@ -238,6 +238,9 @@ openssl genrsa -out privatekey.pem
 Create your certificate & Send your CSR - (Certificate signing request)
 openssl req -new -key privatekey.pem -out server.pem
 
+openssl genrsa -out jumpcloudpk.pem
+openssl req -new -x509 -sha256 -key jumpcloudpk.pem -out jumpcloudappcert.pem -days 1095
+
 Certificate format is x509
 
 Self Sign your certificate

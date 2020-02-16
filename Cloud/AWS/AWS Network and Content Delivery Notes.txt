@@ -187,6 +187,27 @@ VPC Peering
 				- you always need to have one to one peering connection
 
 (Inter Region VPC Peering is now possible)
+
+	- Unsupported VPC Peering Configurations
+		- Overlapping CIDR Blocks
+		- Transitive Peering
+		- Edge to Edge Routing Through a Gateway or Private Connection (important and interesting - see the link below to read this)
+
+			- If either VPC in a peering relationship has one of the following connections, 
+				- you cannot extend the peering relationship to that connection:
+
+					- A VPN connection or an AWS Direct Connect connection to a corporate network
+					- An internet connection through an internet gateway
+					- An internet connection in a private subnet through a NAT device
+					- A gateway VPC endpoint to an AWS service; for example, an endpoint to Amazon S3.
+					- (IPv6) A ClassicLink connection. 
+						(You can enable IPv4 communication between a linked EC2-Classic instance and instances in a VPC
+						 on the other side of a VPC peering connection. However, IPv6 is not supported in EC2-Classic, 
+						 so you cannot extend this connection for IPv6 communication)
+
+			- read this: https://docs.aws.amazon.com/vpc/latest/peering/invalid-peering-configurations.html (explained with diagram)
+
+		
 	
 
 NAT Instance / NAT Gateways
@@ -258,6 +279,12 @@ Direct Connect (Express Route in Azure)
 		- X connect between AWS routers (b1) and Partner routers (b2) in Direct Connect Location (via network cable)
 
 VPC Flow Logs
+	- enables you to capture information about the IP traffic going to and from network interfaces in your VPC
+	- logs can be stored in Cloudwatch Logs or in S3 bucket - you can retrieve it from there
+	- Can be created at 3 levels
+		- VPC
+		- Subnet
+		- Network Interface (ENI)
 	- used for monitoring VPC traffic
 	- you cannot enable flow logs for VPC that are peered with your VPC unless that VPC is in your account
 	- you cannot tag a flow log
@@ -286,7 +313,7 @@ VPC Endpoints
 		- Gateway Endpoints
 			- Currently Gateway Endpoint supports S3 and DynamoDB
 
-Application Gateway
+API Gateway
 	- Fully managed service that makes it easy for developers to publish, maintain, monitor and secure APIs at any scale
 	- can create an API that acts as a “front door” for apps to access data, business logic from your back-end services
 		- such as
@@ -404,6 +431,33 @@ nc -zv <public ip> <port>
 nc -zv 54.184.70.121 22
 Connection to 54.184.70.121 22 port [tcp/ssh] succeeded!
 
+VPN Connections (covering Virtual Private Gateway, Customer Gateway and VPN connection)
+- Flow
+	- Create Customer Gateway by specifying 
+		- a name
+		- Dynamic / Static routing (select static for this example)
+		- the IP address of the server/firewall of the target
+	- Create Virtual Private Gateway and attach it to your VPC
+		- Virtual Private Gateway is the router on the Amazon side of the VPN tunnel
+		- here for this example, let's say the CIDR prefix for your VPC is: 10.0.0.0/16
+			- note if you have overlapping CIDR blocks between VPC and target, you can't establish VPN connection (important)
+		- Select Amazon default ASN option
+	- Establish VPN connection between the two by specifying both and joining them
+		- specify a name
+		- select the VPN gateway from the drop down
+		- select "Existing" option for the customer gateway
+		- select the customer gateway from the dropdown
+		- select "static" routing option
+		- for the static ip prefix option
+			- specify the internal CIDR address prefix for the target (for this example: 192.168.0.0/16)
+		- it will not connect until you download the configuration for the type of customer gateway
+			- specify the vendor, platform and software of the firewall
+			- click on the "Download" button
+		- this needs to be uploaded on the customer gateway side
+	- To propagate the route, add an entry in the route table by specifying 
+		- the target internal CIDR addresses for ex: 192.168.0.0/16
+		- select the virtual private gateway
+
 
 Site to Site (S2S) VPN
 - allows two networking domains to communicate securely between each other over an untrusted network like Internet
@@ -416,7 +470,7 @@ Site to Site (S2S) VPN
 - however if you need to establish connnection between Azure site and AWS site, then S2S VPN is the option
 
 - see the S2S architecture diagram in the folder
-	- ec2 instances in subners in vpc1 -> router -> VPN private Gateway -> VPN Connection -> Custom Gateway -> ...
+	- ec2 instances in subners in vpc1 -> router -> Virtual private Gateway -> VPN Connection -> Custom Gateway -> ...
 	- see the importance VPN Private Gateway (VGW) Diagram in the folder
 	- VGW has built-in high availability for VPN connections - (AWS automatically creates 2 HA endpoints, each in a different AZ - so 2 VPN tunnel is established)
 	- Customer Gateway is the IPSEC VPN Tunnel termination point (this can be a firewall or server)

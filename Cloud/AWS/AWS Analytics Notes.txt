@@ -1,6 +1,15 @@
-Analytics
-Athena
-EMR
+Real Time
+	- Kinesis Data Streams (KDS)
+	- SQS
+	- Internet of Things (IoT)
+Near Real Time
+	- Kinesis Data Firehose (KDF)
+	- Data Migration Service
+Batch - Historical Analysis
+	- Snowball
+	- Data Pipeline
+	- Glue (batch oriented, minimum 5 minute intervals)
+
 Kinesis
 	Background  - What is Streaming Data
 		- Streaming Data is data that is generated continuously by thousands of data sources in small sizes
@@ -16,47 +25,582 @@ Kinesis
 			- iOT Sensor Data
 	Kinesis - What is it?
 		- Kinesis is a platform on AWS to send your streaming data to
+		- Managed alternative to Apache Kafka
 		- Kinesis makes it easy for you to load and analyse streaming data
+		- Great for application logs, metrics, IoT, clickstreams
+		- Great for "real time" big data
+		- Great for stream processing frameworks (Spark, NiFi etc)
+		- Data is automatically replicated synchronously to 3 AZs
 	3 types of Kinesis
-		- Streams
+		- Kinesis Data Streams (KDS)
 			- Producers -> Kinesis Streams <- Consumers
+			- low latency streaming ingest at scale
+			- Real time
+			- different ways to write into Kinesis Data Streams
+				- Kinesis SDK
+				- Kinesis Producer Library (KPL)
+				- Kinesis Agent
+				- 3rd party libraries
+					- Spark
+					- Log4j Appenders
+					- Flume
+					- Kafka Connect
+					- Nifi
+			- Data source could be Click streams, IoT devices, metrics & logs
 			- by default Kinesis streams stores data for 24 hours - can store upto 7 days
 			- within Kinesis streams you have shards (partitions)
+				- one stream is made up of many different shards
+				- number of shards can evolve over time (reshard / merge)
+				- Kinesis Streams consists of Records i.e. Kinesis Streams Records
+					- Records are nothing but "Data Blob": data being sent, serialized as bytes, upto 1 MB, can represent anything
+				- Records are ordered per shard
+				- Record Key
+					- Sent along side a record, helps to group records in Shards - Same Key = Same Shard
+					- Use a highly distributed key to avoid the "hot partition" problem
+				- Sequence Number
+					- Unique Identifier for each record put in shards. Added by Kinesis after ingestion
 			- producers data is written into those shards and consumers read from those shards
+			- Billing is per shard provisioned, can have as many shards as you want
+			- Batching available or per message calls
+			- ability to reprocess / replay data
+				- Multiple applications can consume the same stream
+			- once the data is inserted in Kinesis, it can't be deleted (it is immutable)
 			- typical consumers are EC2 instances which will analyse the streamed data
 			- once stream data is processed / analysed, then you can store the processed data 
 				- for example in in S3 / DynamoDB / EMR / RedShift
-			- 5 transactions per second, upto a total data read out of  2 MB
-			- 1000 records per second for writes
-			- upto a maximum of total data write rate of 1MB per snood
+			- Producer
+				- 1000 records per second for writes or upto a maximum of total data write rate of 1MB per shard
+					- ProvisionedThroughputException occurs if go beyond the state limited
+			- Consumer Classic
+				- 5 API calls per second, upto a total data read out of  2 MB per Shard across all consumers
+			- Consumer Enhanced Fan-Out
+				- 2 MB/s at read per shard, per enhanced consumer
+				- No API calls needed (Push Model)
 			- the data capacity of your stream is a function of the number of shards that you specify for the stream
 			- the total capacity of the stream is the sum of the capacities of its shards
-		- Firehose
-			- Producers -> Kinesis Firehose -> S3/Redshift/Elasticsearch Cluster
+			- Managed AWS Sources for KDS
+				- CloudWatch Logs
+				- AWS IoT
+				- Kinesis Data Analytics
+			- Kinesis Producers
+				- SDK API
+					- PutRecord 
+					- PutRecords - recommended for high throughput (also less no of HTTP requests)
+					- ProvisionedThroughputExceeded if we go over the limits
+						- Reason
+							- when exceeding MB/s or TPS for any shard
+							- Make sure you don't have a hot shard (such as your partition key is bad or too much data in one partition)
+						- Solution
+							- Retries with backoff / exponential backoff (first retry 2 sec, second after 4, third after 8 sec and so on)
+							- Increase shards (scaling)
+							- Ensure your partition key is a good one
+					- Use case: Low Throughput, High Latency, Simple API, AWS Lambda
+
+				- Kinesis Producer Library (KPL)
+					- Easy to use and highly configurable C++ / Java library
+					- Used for building high performance, long running producers
+					- Automated and configurable retry mechanism
+					- Synchronous or Asynchronous API (better performance for async)
+					- Submits metrics to Cloudwatch for monitoring
+					- Batching (2 sections - both turned on by default) - increase throughput, decrease cost
+						- Collect and write records in multiple shards in the same PutRecords API call
+						- Aggregate - increase latency
+							- Capability to store multiple records in one record (go over 1000 records per second limit)
+							- Increase payload size and improve throughput (maximize 1MB/s limit)
+						- Basically it introduces some delay using "RecordMaxBufferedTime" (default 100ms)
+							- and uses that delay for doing a trade off on efficiency i.e.
+							- it aggregates multiple records into one record (within the limit of 1 mb)
+							- and collects and writes those aggregated records in a single PutRecords API call
+					- Compression must be implemented by the user
+					- KPL Records must be de-coded with KCL or special helper library
+
+				- Kinesis Agent
+					- Monitor log files and sends them to Kinesis data streams
+					- Java based agent, built on top of KPL
+					- Install in Linux based server environments
+					- Supported features
+						- Write from multiple directories and write to multiple streams
+						- Routing based on directory / log file
+						- Pre-process data before sending to streams (single line, csv to json, log to json...)
+						- The agent handles file rotation, checkpointing and retry upon failures
+						- Emits metrics to Cloudwatch for monitoring (feature inherited from KPL)
+					- Anytime you need to do aggregation of logs in mass almost real time, Kinesis Agent is the way to go
+	
+			- Kinesis Consumers - Classic
+				- Kinesis SDK
+					- Records are polled by consumers from a shard
+					- Each shard has 2 MB total aggregate throughput per second
+					- GetRecords return upto 10 MB of data (then throttle for 5 seconds) or upto 10000 records
+					- Maximum of 5 GetRecords API calls per shard per second = 200ms latency
+					- If 5 consmers application consume from the same shard means every consumer can poll once a sec and receive < 400 KB/s
+						- More consumers less throughput
+				- Kinesis Client Library (KCL)
+					- Java first library, but available in other languages
+					- Read records from Kinesis produced with the KPL (de-aggregation)
+					- Share multiple shards with multiple consumers in one "group", shard discovery
+					- Checkpointing feature to resume progress (i.e. writes the consumer offset in dynamodb)
+					- Leverages DynamoDB for coordination and checkpointing (one row per shard)
+						- Make sure you provision enough WCU / RCU
+						- Or use On-Demand for DynamoDB
+						- Otherwise DynamoDB may slow down KCL
+						- answers the question - my kcl is not reading fast enough even though I have enough throughput in my KDS
+						- Record processors will process the data
+				- Kinesis Connector Library (Deprecated)
+					- Older Java library (2016)
+					- Write data to - S3, Redshift, DynamoDB, ElasticSearch
+					- Must be running in an EC2 instance 
+						- it is an application whose sole purpose to take data from KDS and write data to the above destinations
+					- Leverages KCL library under the hood
+					- Kinesis Firehose replaces the Connector Library for few of these targets (S3 & Redshift), Lambda for the others
+				- 3rd party libraries: Spark, Log4j Appenders, Flume, Kafka Connect
+				- Kinesis Firehose (described in separate section)
+				- AWS Lambda
+					- AWS Lambda can source records from KDS
+					- Lambda consumer has a library to de-aggregate record from the KPL
+					- It can be used to run lightweight ETL to - S3, DynamoDB, Redshift, ElasticSearch, anywhere you want
+					- It can be used to trigger notifications / send emails in real time
+					- It has a configurable batch size 
+						- how much data Lambda should read at a time from KDS - Helps to regulate throughputs
+			- Kinesis Consumers - Enhanced Fan Out
+				- New game-changing feature from August 2018
+				- Works with KCL 2.0 and AWS Lambda (Nov 2018)
+				- "Each" consumer get 2 MB /s of provisioned throughput per shard
+					- That means 20 consumers will get 40 MB/s per shard aggregated - No more 20 MB limit!
+				- Push based - In Enahnced Fan Out: Kinesis pushes data to consumers over HTTP/2
+				- Reduce latency
+
+			- Kinesis Consumers - Enhanced vs Standard (Consumer comparison)
+				- Use Standard when
+					- Low number of consuming applications
+					- Can tolerate ~200 ms latency
+					- Minimise cost
+
+				- Use Enhanced Fan Out Consumers
+					- Multiple consumer applications for the same Stream
+					- Low Latency requirements ~70ms
+					- afford higher costs
+					- default limit of 5 consumers using enhanced fan-out per data stream
+
+			- Scaling
+				- Operation - Adding Shards (also called "Shard Splitting")
+					- can be used to increase the stream capacity (1MB/s per shard)
+					- can be used to divide a "hot shard"
+					- old shard is closed and will be deleted once the data is expired
+				- Operation - Merging shards
+					- Decrease the stream capacity and save costs
+					- can be used to group two shards with low traffic
+					- old shard is closed and will be deleted once the data is expired
+
+				- Scaling Limitations
+					- Resharding cannot be done in parallel - Plan capacity in advance
+						- you can only perform one resharding operation at a time and it takes a few seconds
+					- It takes time - For 1000 shard, it takes 30k seconds (8.3 hours) to double the shards to 2000
+
+					- You can't do the following:
+						- scale more than twice for each rolling 24-hour period for each stream
+						- scale upto more than double your current shard count for a stream
+						- scale down below half your current shard count for a stream
+						- scale up to more than 500 shards in a stream
+						- scale a stream with more than 500 shards down unless the result is fewer than 500 shards
+
+				- Auto-scaling
+					- Auto scaling is not a native feature of Kinesis
+					- The API call to change the number of shards is UpdateShardCount
+					- We can implement Auto Scaling with AWS Lambda
+				
+			- Security
+				- Control access / authorization using IAM Policies
+				- Encryption in flight using HTTPS endpoints
+				- Encryption at rest using KMS
+				- Client side encryption must be manually implemented (harder)
+				- VPC Endpoints available for Kinesis to access within VPC
+		- Kinesis Data Firehose (KDF)
+			- Producers -> Kinesis Firehose -> S3/Redshift/Elasticsearch Cluster/Splunk
+			- Producer Data sources
+				- Kinesis SDK 
+				- Kinesis Producer Library (KPL)
+				- Kinesis Agent 
+					- Agent can directly write into KDF
+					- Linux based 
+					- runs on the server
+					- typically used for ingesting logs
+				- Kinesis Data Streams (very common pattern - KDS writing into KDF)
+				- Cloudwatch Logs & Events 
+				- IoT rules actions
 			- producers can be EC2, smart phones, laptop, iOT Sensors
+			- as soon as the data comes in to Firehose - it can trigger a lambda function for transformation
 			- inside Firehose there is no persistent storage - data needs to be analysed as it comes in
-			- as soon as the data comes in - it can trigger a lambda function to analyse 
-			- analysed data could be output to s3 or to redshift (via s3) or to elastic search cluster
-			- 
+				- however KDF can be configured to have the 
+					- source records stored in a S3 bucket (the raw source record)
+					- transformation failures and delivery failures into S3 bucket
+						- in essence, either the transformed record will be there in destination or in S3
+
+			- Analysed data could be output to s3 or to redshift (via s3) or to elastic search cluster or to splunk cluster
+				- or in other words load streams into S3, RedShift, ElasticSearch & Splunk
+			- Fully Managed Service, no administration
+			- Pay only for the amount of data going through Firehouse
+			- Near real time (where as KDS is real time)
+			- Automatic Scaling (unlike KDS)
+			- Spark / Kinesis Client Library (KCL) do NOT read from KDF (they only read from KDS)
+			- Supports multiple data formats 
+			- Data conversion from JSON to Parquet / ORC (only for S3)
+			- Data transformation through AWS lambda (ex: CSV => JSON - Several blueprint templates available to transform in the format you want)
+			- Supports compression when the target is S3 (GZIP, ZIP and SNAPPY) and only GZIP when data loaded into RedShift
+			- If the destination is RedShift it goes via S3 (Copy command is issued from S3)
+			- Firehouse Buffer Sizing (to manage throughput)
+				- Firehose accumulates records in a buffer
+				- Buffer is flushed based on time and size rules
+					- for eg: buffer size reaches 32 MB or buffer time 2 mins (whichever is earlier)
+					- High throughput - buffer size will be hit
+					- Low throughput - buffer time will be hit
+				- Firehose can automatically increase the buffer size to increase throughput
+
+		- Kinesis Data Streams (KDS) vs Kinesis Data Firehose (KDF)
+			- Streams
+				- Use case - if your application wants to read data - go for streams
+				- Going to write custom code (Producer / Consumer)
+				- Real time (~200 ms latency for classic, ~70 ms latency for enhanced fan-out)
+				- Must manage scaling (shard splitting / merging)
+				- Data storage 1 to 7 days, replay capability, multi-consumer
+				- Use with Lambda to insert data in real time to Elastic Search (for example)
+
+				
+			- Firehose
+				- Use case - if you want to get the source data into S3, Splunk, redshift, elasticsearch - then go for Firehose
+				- Fully Managed, Auto scaling, send to S3, Splunk, Redshift, ElasticSearch
+				- Serverless data transformation with lambda
+				- Near real time (lowest buffer time is 1 minute)
+				- Automated Scaling
+				- No data storage
+
 		- Analytics
+			- Used for querying streams of data continuously
+			- Similar to Spark streaming
+				- you can setup windows of time that you can look back on and aggregate & analyse data across
+				- you can write sqls to analyse that data, turn around and spit out the results to another stream
+					- which ultimately might go to some analytics tools of your choice
 			- Producers -> Kinesis Streams / Kinesis Firehose -> S3/Redshift/ElasticSearch Cluster
+			- Serverless; scales automatically
+				- Default processing capacity is 8 KPU (each KPU is of 4 GB) = 8 X 4 = 32 GB
+			- Perform real time analytics on streams using SQL
 			- Analyse the data in Kinesis, then use Kinesis Analytics - it could use either Streams / Firehose
-CloudSearch
-Elasticsearch Service
+			- Use IAM permissions to access streaming source and destination(s)
+			- Schema discovery feature (discover schema from incoming streams)
+			- RANDOM_CUT_FOREST - ability to detect anomalies or outliers in the stream of data
+			- Kinesis Analytics process comprises of:
+				- Input
+					- Input Streams / Source Streams (from KDS / KDF)
+					- Reference Table (have to configure in s3 bucket) [optional] 
+						-  configure Reference Data source to enrich your input streams
+				- Processing
+					- then we have realtime analytics application code itself sits in middle - this is where the analysis happens
+						- which will perform the straight up sql queries on your stream of information
+				- Output
+					- Output Streams (to KDS / KDF)
+						- and eventually might go to Amazon S3 / Redshift
+					
+			- Use Cases
+				- Streaming ETL (example below)
+					- You can build an application that 
+						- continuously read IoT sensor data stored in KDS
+						- organises the data based on sensor type
+						- remove duplicate data, 
+						- normalise the data per specified schema
+						- then go on to deliver that processed data to Amazon S3
+				- Continuous metric generation
+						- build live leader board for mobile game
+							- by computing top players every minute
+							- then sending it to DynamoDB
+						- you can check traffic to your website
+							- by calculating the number of unique website visitors every 5 minutes
+							- then sending the processed results to Amazon Redshift for further analysis
+				- Responsive Analytics
+						- An application computing the availability or success rate of customer facing API over time
+						- then sending those results to Amazon Cloudwatch
+						- You can then build another application to looks for events that needs certain criteria
+						- then automatically notifying the right customers using KDS and SN
+
+Amazon Elasticsearch Service
+	- Elastic Search in General
+		- For Search and Analytics
+		- Fundamentally designed to be a Search Engine, but also heavily being used for Analysis and Reporting (can handle peta-byte scale)
+		- Built on top of opensource project Lucene and it is regarded as scalable version of Lucene (Horizontally scalable)
+		- Documents storage and retrievable - every document has a unique id and a type
+			- A type defines type schema and mappinng (types concept are deprecated - it is replaced by Indices)
+			- An Index powers search into all documents within a collection of types
+				- They contain inverted indices that let you search across everything within them at once
+			- An Index is split into shards
+			- Documents are hashed to a particular shard
+			- Every shard is a self-contained Lucene index of its own
+			- Every shard may be on a different node in a cluster
+			- Index has primary shards and replicas
+				- Write requests are routed to the primary shard, then replicated
+				- Read requests are routed to the primary or any replica
+	- Elastic Stack (also called ELK stack) comprises of
+		- Elastic Search
+		- Beats / Logstash (One of the use case is to extract log file contents into elastic search cluster)
+		- Kibana (Visualization tool - It can source data from elastic search cluster for visualization)
+			- think of Kibana as Google Analytics Dashboard
+		(in this context is also regarded as a data pipeline (Logstash -> Elastic Search -> Kibana)
+	- Use cases
+		- Full text search
+		- Log Analytics
+		- Application Monitoring
+		- Security Analytics
+		- Clickstream Analytics
+	- Amazon ElasticSearch Service
+		- Fully Managed (but not serverless - you still need to decide the number of servers)
+		- Scale up or down without downtime (But thisn't automatic)
+		- Pay for what you use
+			- Instance hours, storage and data-transfer
+		- Dedicated Master Node(s) - Choice of count and types
+		- Amazon ElasticSearch Service Domain (Cluster)
+			- collection of all the resources needed to run your Elasticsearch cluster
+			- contains the configuration for the cluster as a whole
+			- in other words a cluster in Amazon is a Domain
+		- allows you to enable automatic snapshot in S3 (for backup purposes)
+	- Security
+		- Network IsoLation using VPC
+			- Options for Accessing Kibana setup within a VPC
+				- Cognito
+					- AWS allows you to integrate with Cognito Service that lets you login to Kibana through an Enterprise/web/social identity provider - ex:
+						- you can use Microsoft Active Directory using SAML 2.0
+						- or social identity providers (Facebook, Amazon, Google, Twitter etc)
+				- Nginx reverse proxy on EC2 forwarding to ES domain
+				- SSH tunnel for port 5601
+				- VPC Direct Connect
+				- VPN
+		- Data can be encrypted at rest and in transit using keys
+		- Authentication and authorization using Cognito and IAM policies
+			- Resource based policies (attach those to service domain that determines what actions and principles (user) can access ES API)
+			- Identity based policies
+			- IP based policies
+			- Request signing (all request to Amazon ES must be signed - use AWS SDK for signing the request (JSONs)
+	- AWS Integration to secure put data from any source - search, analyse and visualise that data in real time
+		- S3 buckets (via Lambda to Kinesis)
+		- KDS
+		- DyanamoDB Streams
+		- Cloudwatch / CloudTrail (for auditing and moitorign purposes)
+		- IoT Sensor devices
+	- High availability
+		- Zone awareness (allocate nodes in your ES Cluster service in two different availability in a region)
+	- Amazon's recommendation
+		- Anti-Pattern (or not to be used with/for)
+			- OLTP
+			- Ad-hoc data querying (Athena is better for this)
+		
+
+		
+
+
+
 Data Pipeline
+	- Lets you schedule tasks for processing your big data - basically a task scheduling framework
+	- Similar to Oozie in Hadoop world
+	- Where you can run different operations that depend on each other on different schedules
+	- it is a web service that helps you reliably process and move data between different compute and storage services at specified intervals
+	- Destinations include S3, RDS, DynamoDB, RedShift and EMR
+
+	- Features
+		- Manages task dependencies
+		- Retries and notifies on failures
+		- Cross-region pipelines
+		- Precondition checks
+			- DynamoDB data exists, table exists, S3 path exists, scrips exit code check and so on and so forth
+		- Data sources may be on-premises
+			- Task runner is installed on-premise that then communicates with Datapipeline
+			- Similar to Kinesis Agent that communicates with Kinesis
+		- Highly available
+
+	- Activities
+		- EMR Jobs
+		- Hive tasks
+		- Copy (data from one source to the other)
+		- SQL scripts
+		- Scripts (command line / linux scripts that can be triggered)
+
+		- will retry for 3 times - post which raise any configured onFailure alarm
+		- can then manually be run using CLI / API / Console
+EMR
+Spark
+Hive
+Pig
+HBase
+Presto
+Zepplin and EMR Notebooks
+Hue, Splunk and Flume
 AWS Glue
 	- Cloud Optimised ETL Service
+	- Main use to service a centralised meta-data repository for your data lake in S3
+		- Discover Schemas / Table definitions and publish those for your analysis tools eg: Athena / Redshift / EMR down the road
+	- You can also do Custom ETL jobs on your data
+		- As it is finding new data in S3, it can actually trigger off ETL jobs 
+			- to transform data into a more structured or purpose built format for later processing
+		- Under the hood those ETL jobs uses Apache Spark
 	- It allows you to organize locate move and transform all your datasets across your business
+	- Purpose of Glue ETL is to Transform data, Clean Data, Enrich Data (before doing analysis)
+		- you can either use
+			- Generated ETL code and customise that further
+			- or provide your own Spark or PySpark scripts
+		- output of ETL jobs can go to S3, JDBC (RDS, RedShift) or in Glue Data Catalog
+			- In case of MySQL server installed in an EC2 to be processed by Glue, the EC2 instance should be inside a VPC
+	- Fully Managed (Serverless), Cost Effective, Pay only for resources consumed
 	- USPs
-		- serverless
+		- Serverless
 			 - it will automatically spin up the servers internally and execute the scripts on your behalf
-		- schema inference
+		- Schema inference
 			- just point to the data source and AWS will infer the schema
 				- will store it in centralised catalog as table definitions
 				- it will use the table definitions to infer the schema to read, parse and query your data
-		- autogen ETL scripts
+		- Autogen ETL scripts
+			- Automatically generate code for you to perform that ETL after you define the transformations you want to make to your data in a graphical manner
+			- will generate that code in Scala or Python (since under the hood it uses Spark and Spark itself runs on Scala/Python, hence this restriction)
+				- you can tweak the generated code though
 			- once you point to the centralised catalog, 
 				- it will generate ETL scripts to extract and transform your data into Redshift DW
 				- adapts to the changes in the input source or in output
 				- you can customise the generated scripts using the interface provided in console or edit it yourself
+		- Encryption
+			- If you want to store your transformed data in a encrypted manner 
+				- You can use 
+					- Server-side Encryption (at rest)
+					- SSL in transit
+		- Job bookmarks - lets you actually pick up from where you have left when you ran the previous job
+			- Persists state from the job run
+			- Prevents reprocessing of old data
+			- Allows you to process new data only when re-running on a schedule
+			- Works with s3 sources in a variety of formats (mostly Job bookmarks are used with S3)
+			- Works with relational databases via JDBC (if PK's are in sequential order) - doesn't work that well
+				- Only handles new rows, not updated rows
+		- Glue ETL can be event driven - for example it can be run in response to new data being discovered
+		- Control the performance by providing additional DPUs (Data Processing Units) to increase performance of underlying Spark Jobs
+		- Errors in ETL jobs are reported to CloudWatch - you can then use CloudWatch Events to accomplish some of the below:
+			- CloudWatch Events - for ex: when an ETL job succeeds or fails - you can do some of the following:
+				- Fire off a Lambda function
+				- SNS notification 
+				- Invoke EC2 run
+				- Send events to Kinesis
+				- Activate a step function
+		- You can run your existing ETL Jobs (Scala or Python code) in Glue
+			- Simply upload the Amazon S3 and create one or more jobs that use that code 
+			- same code can also be used in multiple jobs by pointing them to the same code location on Amazon S3
+	- Glue Crawler / Data Catalog
+		- One component of Glue
+		- It scan yours data in S3 and infers schema automatically just based on the structure of data that it finds there in s3 buckets
+			- for eg: if there are csv, tsv files sitting, 
+				- it will automatically break out the columns for you
+				- if it finds the header, it will also name them for you
+		- Crawler after scanning produces Glue Data Catalog (Centralised meta-data depository)
+		- you can scheduler that crawler to run periodically if you need to
+			- so if you think you are going to have new data or new types of data just popping into s3 at random times,
+				- Glue can discover those automatically - just run on scheduler and it will automatically pick up the data
+					- so other systems downstream can see it and process that
+		- Glue crawler will extract partitions based on how your S3 data is organised
 
+	- Glue Data Catalog and Hive Meta store Integration
+		- Hive meta store can be imported into Glue Data Catalog
+		- Also Glue Data Catalog can provide meta data information to Hive on EMR
+
+	- Glue Scheduler to schedule the jobs
+	- Glue Triggers to automate job runs based on "events"
+
+	- Glue ETL - Transformations
+		- Bundled Transformations
+			- DropFields, DropNullFields - remove (null fields)
+			- Filter - specify a function to filter records - can be used to remove outliers
+			- Join - to enrich data (for ex: join with reference data to augment your data with names)
+			- Map - add fields, delete fields, perform external lookups
+
+		- Machine Learning Transformations
+			- FindMatches ML: identify duplicate or matching records in your dataset
+				- even when the records do not have a common unique identifier and no fields match exactly
+
+		- Out of the Box format conversions: CSV, JSON, Avro, Parquet, ORC, XML
+
+		- Apache Spark transformations (example: K-Means Clustering from SparkML)
+			- Basically everything that's in Spark is at your disposal as well so use it you need to 
+
+	- Glue Development Endpoints
+		- Develop ETL scripts using a notebook
+			- Then create an ETL job that runs your script
+
+		- Endpoint is in a VPC controlled by security groups, connect via
+			- Apache Zeppelin on your local machine
+			- Zeppelin notebook server on EC2 (via Glue Console)
+			- SageMaker notebook
+			- Terminal Window
+			- PyCharm profession edition
+			- Use Elastic IP's to access a private endpoint address
+
+	- Glue Console
+		- can be used to refine the definition store Glue Data Catalog that was originally created by Glue Crawler
+
+	- Glue cost model
+		- Billed by the minute for crawler and ETL Jobs
+		- First million objects stored / accessed are free for the Glue Data Catalog
+		- Development endpoints for developing ETL code charged by the minute
+
+	- Glue Anti-patterns (where Glue is NOT recommended)
+		- Streaming data (Glue is batch oriented, minimum 5 minute intervals)
+			- If you must ETL your data while streaming it in, it would be a good idea to 
+				- perform you ETL using Kinesis
+				- store the data in S3 or Redshift
+				- then trigger glue ETL to continue transforming it
+		- Multiple ETL engines
+			- If your job is processed using other than Spark engine (for ex: Hive or Pig), then
+				- Data pipeline or EMR might be a better choice for doing that ETL than Glue ETL
+		- NoSQL databases
+			- Glue doesn't support nosql databases (for ex: DynamoDB)
+				- Because NoSQL databases don't require a rigid schema
+				- That's the whole point of Glue, 
+					- it provides a schema for unstructured data 
+						- for databases or analysis tools that require some sort of structure to the data that they are looking at
+
+Step Functions
+Athena
+	- Query Engine for doing interactive queries on your data in an S3 data lake
+	- Serverless
+	- Official Definition - interactive query service for S3 (SQL)
+		- basically, it's a SQL interface to your data being stored in some S3 data lake
+		- No need to load data, it stays in S3 - Athena uses Glue Data Catalog to interpret that data and query it interactively
+	- Under the hood, it uses Presto - a very highly customised and pre configured Presto instance for you with a nice little UI on top of it
+	- Supports many data formats
+		- CSV (human readable)
+		- JSON (human readable)
+		- ORC (columnar, splittable) 
+			- columnar - efficient queries (Performance, space savings)
+			- splittable - even though they are compressible, they can be split into chunks and distributed across your cluster
+		- Parquet (Columnar, Splittable)
+		- Avro (row based, splittable)
+	- Unstructured, semi-structured or structured
+	- Use cases
+		- Ad hoc queries of web logs
+		- Querying staging data before loading to Redshift
+		- Analyse CloudTrail / CloudFront / VPC / ELB logs in S3
+		- Integration with Jupyter, Zeppelin, RStudio Notebooks
+		- Integration with QuickSight
+		- Integration via ODBC / JDBC with other Visualization tools
+
+	- Athena Cost Model
+		- Pay As you go
+			- $5 per TB scanned - successsful / cancelled queries count, failed queries are excluded
+			- No charge for DDL (CREATE / ALTER / DROP)
+			- Save lots of money by using columnar format (ORC, Parquet) - saves about 30-90% and get better performance
+			- Glue and S3 have their own charges
+			- Partitioning your data can also help Athena to reduce costs as well
+				- if you partition your data in S3 by date, month or year
+					- the query can be limited to that partition and thus scan less data, so low cost
+
+	- Athena Security
+		- Access Control
+			- IAM, ACLs, S3 bucket policies (AmazonAthenaFullAccess, AWSQuickSightAthenaAccess)
+			- TLS encrypts in-transit (between Athena and S3)
+
+	- Athena Anti-patterns (where it is NOT recommended)
+		- Highly formatted reports / visualisation (use QuickSight for that)
+		- ETL (use Glue instead)
+	
+Database Migration Service (DMS)
+IoT
+SageMaker
+QuickSight
