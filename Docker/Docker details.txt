@@ -1,6 +1,8 @@
 Docker id: gmail id without @gmail.com
 Docker password: usual with !
 
+Docker -> Application Delivery Technology (Build -> Ship -> Run)
+
 Learning chapters in Folder: /Users/chasrini/DockerForJava
 
 docker commands

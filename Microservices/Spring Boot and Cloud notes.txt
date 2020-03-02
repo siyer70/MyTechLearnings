@@ -1,0 +1,205 @@
+Spring Boot
+
+			Prominent Starter projects
+				- spring-boot-starter-web - Web & RESTful applications
+				- spring-boot-starter-web-services - SOAP Web Services
+				- spring-boot-starter-test - Unit & Integration testing
+				- spring-boot-starter-jdbc - Traditional JDBC
+				- spring-boot-starter-hateoas - Add HATEOAS features to your services
+				- spring-boot-starter-security - Authentication and Authorization using Spring Security
+				- spring-boot-starter-data-jpa - Spring Data JPA and Hibernate
+				- spring-boot-starter-cache - Enabling Spring framework caching support
+				- spring-boot-starter-data-rest - Expose simple REST Services using Spring Data REST
+
+			Other ones
+				- spring-boot-starter-actuator - Use it when you want to use the features of Actuator
+				- spring-boot-starter-jetty/undertow - if you want to use jetty / undertow, ...-starter-tomcat is the default
+				- spring-boot-starter-logging - Logging framework that uses logback
+				- spring-boot-starter-log4j2 - Logging framework that uses log4j
+			Developer Tools
+				- During development, you can get your code changes synchronised using a feature called "Hot Deploy" that enables you
+					- to see the effect of your code changes without having to stop and start the application explicitly, 
+					- Though it internally restarts the application, however it only needs to reload application level changes (beans)
+						- hence it is much faster than a normal reload that also need to take care of external dependencies
+
+			Actuator (part of Spring Boot and not Spring Cloud)
+				- It exposes multiple REST service calls - for ex:
+					- You can use it for monitoring say (for ex: health check)
+					- audit events
+					- For reading the meta data of the service / application 
+						- View all the beans that are configured
+						- how auto configuration has worked
+						- how many times a specific service is called or service failed
+					- Condition matches and negative matches
+						- Spring boot is all about auto configuration - what beans were configured
+					- Details regarding 
+						- configuration properties
+						- environment
+						- loggers that are configured
+						- thread & heap dump
+						- Scheduled tasks
+						- some metrics (memory used, cpu count)
+							- for ex: http://<host>:<port>/actuator/metrics/jvm.memory.used
+						- http trace (all the details regarding the previous requests - DO NOT enable it in PROD)
+						- mappings (to various urls)
+					- To refresh cache
+					- To propagate config server updates to other microservice instances (via cloud bus over rabbitmq)
+						- for example 
+						- if a microservice instance A is running in port 8500 and other two instances are running 8501 & 8502
+						- Let's say that Microservice is configured to 
+							- include config client in pom and hence retrieves the config from config server
+							- include cloud bus amqp in pom and rabbitmq server is running 
+							(you can also do it with other options like kafka)
+						- Now Start all 3 instances of Microservice
+						- At the time of startup, all instances registers itself with the cloud bus
+						- Now make some configuration changes in git repository
+						- at this stage none of the microservice instance would see those changes yet
+						- you can then send the following POST call to any of the microservice instance 
+						- for example in this case we send the POST call to instance A
+							- http://localhost:8500/actuator/bus-refresh in postman
+						- any subsequent call to any of the microservice instance would reflect the updated cont
+
+					- you can also include hal browser in pom and then acess it via http://<host:<port>
+
+
+					- Versioning
+						- uri based versioning = /v1/person and /v2/person - used by Twitter
+						- request param based versioning = /person/param?version=<version> - used by Amazon
+						- custom header param based versioning = in the header X-API-VERSION=<x> - used by Microsoft
+						- media based versioning = Accept "application/vnd.company.app-<v1/v2>+json" - used by Github
+
+						- uri and request param are 
+							- polluting the uri space
+							- caching and documentation is relatively easier here
+						- media and custom header are 
+							- misuse of headers, 
+							- also caching becomes difficult (since the URIs are same)
+							- need explicit documentation
+
+
+
+					- Spring tools eclipse plug-in
+						Enables autocomplete in application.properties for all spring related properties
+
+
+
+					- Richardson Maturity Model
+						Level 0 - soap style endpoints having verbs in uri for eg: /xyz/getItems?...
+						Level 1 - REST style endpoints with proper HTTP Methods 
+						Level 2 - Level 1 + HATEOAS
+						
+
+
+What is Spring Cloud
+
+	Spring Cloud comprises of multiple projects:
+
+	Few important ones are listed below:
+
+	Spring Cloud Netflix
+		Eureka
+		Hystrix
+		Zuul API Gateway
+
+	Spring Cloud Bus
+	
+	Spring Cloud Config 
+
+
+	Some of the other ones include (but not limited to):
+		Spring Cloud Cloud foundry Service Broker
+
+		Spring Cloud Cluster
+
+
+Why Spring Cloud
+
+	To answer this question, one should look at
+
+		Challenges while building Microservices
+
+			- Bounded Context
+				- Boundaries for Microservie
+			- Configuration Management
+				- 1000 microservices
+				- Number of environments
+				- Versions
+			- Dynamically scaling up and down
+			- Visibility
+				- Monitoring
+				- Troubleshooting
+			- Fault Tolerance
+				- Pack of cards example
+					- Chain of Microservices failing
+
+
+		Spring Cloud solves the above problems with the under-mentioned components
+
+			Spring Cloud Config 
+				Solves configuration management
+
+			Zuul API Gateway
+				Authentication, Authorisation & Security
+					- Central location to control
+					- Also all crossing cutting concerns, can be handled here
+				Rate Limits
+					- Request throttling
+				Fault Tolerance
+					- 
+				Service Aggregation
+					- Multiple service output can be aggregated here to provide a consolidated view for the user
+
+
+			Feign client (REST Client)
+				- Makes it easier to call one microservice from the other
+
+
+			Eureka
+				- Service Discovery using the Eureka Naming Server
+
+
+			Ribbon
+				- Client side load balancing (If there are multiple instances of a service available, you can utilise ribbon to use all instances)
+
+			Hysterix
+				- Fault Tolerance
+					- Implementation of Circuit Breaker pattern
+						- Stop cascading failures (Service A -> Service B (Failure) -> Service C) by 
+							- failing fast
+							- provide a way to self heal (to improve the system's resiliency) - recover as soon as possible
+
+
+
+				- Spring looks for any method annotated with the @HystrixCommandannotation, and wraps that method so that Hystrix can monitor it.
+
+				- Hystrix watches for failures in that method, and if 
+					- failures reached a threshold (limit), then
+						- Hystrix opens the circuit so that subsequent calls will automatically fail. 
+						- Therefore, and while the circuit is open, Hystrix redirects calls to the fallback method.
+
+			Zipkin & Sleuth (Visibility and Monitoring) 
+				- Sleuth - A framework to generate a common id for each request spanning across all microservices
+				- Zipkin Distributed tracing - it uses sleuth id for tracing
+
+				
+
+
+			Advantages of Microservices
+
+				- New Technology & Process adaption
+				- Dynamic scaling
+				- Faster release cycles and time to market
+
+			
+						
+					
+				
+				
+
+
+
+	
+
+
+
+

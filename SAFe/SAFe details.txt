@@ -1,0 +1,98 @@
+SAFe - Scaled Agile Framework 4.5
+
+Knowledge for people building the world's most important systems
+SAFe is a freely revealed knowledge base of integrated, proven patterns for enterprise Lean-Agile development
+
+- Help you gain the knowledge necessary to lead a Lean-Agile transformation
+	- Underlying principles derived from Lean, 
+	- Systems thinking
+	- Agile development
+	- Product development flow 
+	- and DevOps
+
+- SAFe profoundly impacts business outcomes 
+	- for some of the largest system and software dependent enterprises across the globe
+
+
+	- 50% improvement in quality
+	- 20 to 50% improvement in productivity
+	- 2 to 3x faster time to market
+	- Higher employee engagement
+
+- Allows companies to innovate and test ideas more quickly
+
+- Simplify Governance and improve portfolio performance
+
+
+provides workflows, activities and automation needed 
+
+
+Reasons for Adopting Agile
+01. Accelerate product delivery
+	- Sustainably shortest lead time
+	- Faster time to market
+	- Getting your solutions out more quickly
+	- Being more competitive
+	- Helping your internal users and internal operational value streams to work more effectively 
+		- so that value flows more efficiently through the org
+	
+
+02. Enhance ability to manage changing priorities (requirements?)
+
+03. Increase productivity
+
+04. Improve project visibility (??)
+
+05. Enhance software quality
+
+06. Improve business/IT alignment
+
+07. Reduce project risk
+
+08. Improve team morale
+
+09. Enhance delivery predictability
+
+10. Improve engineering discipline
+
+11. Better manage distributed teams
+
+12. Reduce project cost
+
+13. Increase software maintainability
+
+
+Only management can change the system
+
+"It is not enough that management commit themselves to quality and productivity, 
+they must know what it is they must do
+
+
+Such a responsibility cannot be delegated"
+
+OKR is a strategic framework, whereas KPIs are measurements that exist within a framework.
+
+Scaled Agile Framework (SAFe)
+
+Built-in Quality
+Program execution
+Alignment
+Transparency
+
+
+Lean UX
+	Come up with your 'Buyer persona' and hypothesis
+	Develop your Lean UX Wireframe and Build a minimum viable product (MVP)
+	Test, Analyze & Tweak
+	Rapid-fire feedback from your target customers 
+	iteration, rinse & repeat
+
+In short, Create your wireframe based on your buyer persona, create your hypothesis, validate your hypothesis, test, learn, then repeat.
+
+Lean UX is based on Lean Manufacturing that "avoids wastage"
+
+A buyer persona is a research-based profile that depicts a target customer. Buyer personas describe who your ideal customers are, what their days are like, the challenges they face and how they make decisions.
+
+For this, you’ll want to know who your users happen to be, what your product will be used for, when it will be used, the situations where your  offering will be used, the product’s most important features and functions, and the biggest risks to product acquisition and delivery.
+
+

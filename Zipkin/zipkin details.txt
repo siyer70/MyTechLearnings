@@ -1,0 +1,9 @@
+start rabbitmq server by using the command
+
+rabbitmq-server
+
+(it will be in the path: /usr/local/sbin)
+
+go to user home directory
+cd zipkin
+RABBIT_URI=amqp://localhost java -jar zipkin.jar

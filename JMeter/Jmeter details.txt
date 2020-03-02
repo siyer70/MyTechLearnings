@@ -1,0 +1,10 @@
+export _JAVA_OPTIONS="-Xms512m -Xmx4096m"
+
+
+Run the jmeter shell file from the leagueinfoserver folder
+./run-jmeter-api-test.sh
+
+
+https://www.blazemeter.com/blog/how-to-save-response-data-in-jmeter/
+
+https://blog.e-zest.com/how-to-run-jmeter-in-non-gui-mode/
